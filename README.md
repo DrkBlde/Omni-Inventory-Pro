@@ -38,7 +38,7 @@ This is **Version 1** of the app, built as a standalone Python desktop applicati
 ![Billing Screen](screenshots/billing.png)
 
 
-![Light Mode](screenshots/light_Mode.png)
+![Light Mode](screenshots/lightmode.png)
 
 ---
 
