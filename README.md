@@ -1,13 +1,10 @@
 <p align="center">
-  <img src="app_icon_preview.png" alt="Omni Inventory Pro" width="120"/>
+  <img src="app_icon.png" alt="Omni Inventory Pro" width="120"/>
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
 
 <p align="center">A lightweight, offline-first desktop inventory management system built for small businesses.</p>
-
-<!-- 📸 IMAGE: Add a banner/hero image here. Wide screenshot of the welcome screen or dashboard. Recommended size: 1280×400px. Save as `screenshots/banner.png` and uncomment the line below. -->
-<!-- ![Omni Inventory Pro Banner](screenshots/banner.png) -->
 
 ---
 
@@ -17,7 +14,7 @@ Omni Inventory Pro is a desktop application that helps small businesses manage t
 
 This is **Version 1** of the app, built as a standalone Python desktop application.
 
-<!-- 📸 IMAGE: Screenshot of the welcome/home screen. Save as `screenshots/welcome.png` and uncomment the line below. -->
+
 <!-- ![Welcome Screen](screenshots/welcome.png) -->
 
 ---
@@ -33,14 +30,16 @@ This is **Version 1** of the app, built as a standalone Python desktop applicati
 - **Dark / Light Mode** — Toggle between themes; preference is saved between sessions
 - **Offline & Local** — No internet required; all data is stored in a local SQLite database
 
-<!-- 📸 IMAGE: Screenshot of the inventory/product list screen. Save as `screenshots/inventory.png` and uncomment the line below. -->
+
 <!-- ![Inventory Screen](screenshots/inventory.png) -->
 
-<!-- 📸 IMAGE: Screenshot of the billing screen with a bill being created. Save as `screenshots/billing.png` and uncomment the line below. -->
+
 <!-- ![Billing Screen](screenshots/billing.png) -->
 
-<!-- 📸 IMAGE: Screenshot of the app in dark mode. Save as `screenshots/dark_mode.png` and uncomment the line below. -->
-<!-- ![Dark Mode](screenshots/dark_mode.png) -->
+<!-- ![Settings Screen](screenshots/settings.png) -->
+
+
+<!-- ![Light Mode](screenshots/light_mode.png) -->
 
 ---
 
