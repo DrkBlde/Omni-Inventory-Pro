@@ -126,5 +126,7 @@ When reporting a bug, please include:
 - What you were doing when the issue occurred
 - Any error messages you saw
 - Your operating system and Python version (if running from source)
+- If you experience any glitch, mention if the glitch is reproducible or not
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
+>I may not respond at all to any requests or emails
