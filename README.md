@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app_icon_preview.png" alt="Omni Inventory Pro" width="120"/>
+  <img src="app_icon.png" alt="Omni Inventory Pro" width="120"/>
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
@@ -38,7 +38,7 @@ This is **Version 1** of the app, built as a standalone Python desktop applicati
 ![Billing Screen](screenshots/billing.png)
 
 
-![Light Mode](screenshots/light_mode.png)
+![Light Mode](screenshots/lightmode.png)
 
 ---
 
