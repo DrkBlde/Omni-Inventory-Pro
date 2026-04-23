@@ -1,9 +1,13 @@
-# Omni Inventory Pro
+<p align="center">
+  <img src="app_icon_preview.png" alt="Omni Inventory Pro" width="120"/>
+</p>
+
+<h1 align="center">Omni Inventory Pro</h1>
+
+<p align="center">A lightweight, offline-first desktop inventory management system built for small businesses.</p>
 
 <!-- 📸 IMAGE: Add a banner/hero image here. Wide screenshot of the welcome screen or dashboard. Recommended size: 1280×400px. Save as `screenshots/banner.png` and uncomment the line below. -->
-<!-- ![Omni Inventory Pro](screenshots/banner.png) -->
-
-> A lightweight, offline-first desktop inventory management system built for small businesses.
+<!-- ![Omni Inventory Pro Banner](screenshots/banner.png) -->
 
 ---
 
