@@ -129,4 +129,3 @@ When reporting a bug, please include:
 - Your operating system and Python version (if running from source)
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
-> I may not respond to emails immediately
