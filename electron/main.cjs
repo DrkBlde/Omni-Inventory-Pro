@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron'); // Added Menu here
+const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -26,24 +26,19 @@ function createWindow() {
     height: 800,
     title: "Omni Inventory Pro",
     backgroundColor: '#000000',
-    // --- 1. SET THE WINDOW ICON ---
-    // Ensure your icon.ico is in your electron folder or public folder
-    icon: path.join(__dirname, 'icon.ico'), 
+    icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    show: false 
+    show: false
   });
 
-  // --- 2. REMOVE THE MENU BAR ---
-  // This completely removes File, Edit, View, etc.
-  Menu.setApplicationMenu(null); 
-  // Alternatively, use mainWindow.setMenuBarVisibility(false);
+  Menu.setApplicationMenu(null);
 
-  const startURL = isDev 
-    ? 'http://localhost:5173' 
+  const startURL = isDev
+    ? 'http://localhost:5173'
     : `file://${path.join(__dirname, '../dist/index.html')}`;
 
   mainWindow.loadURL(startURL);
@@ -58,8 +53,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startServer(); 
-  createWindow(); 
+  startServer();
+  // Wait for the server to be ready before creating the window
+  setTimeout(createWindow, 1500);
 });
 
 app.on('window-all-closed', () => {
