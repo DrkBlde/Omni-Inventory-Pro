@@ -6,8 +6,8 @@
 
 <p align="center">A full-featured, offline-first desktop inventory management system built for small businesses.</p>
 
-<!-- 📸 IMAGE: Add a banner/hero image here. Wide screenshot of the dashboard. Recommended size: 1280×400px. Save as `screenshots/banner.png` and uncomment the line below. -->
-<!-- ![Omni Inventory Pro Banner](screenshots/banner.png) -->
+
+![Omni Inventory Pro Banner](screenshots/banner.png)
 
 ---
 
@@ -15,8 +15,8 @@
 
 Omni Inventory Pro V2 is a complete rebuild of V1 — upgraded from a Python desktop app to a modern **Electron + React** desktop application. It introduces a full login system, role-based access control, a Point of Sale screen, staff attendance tracking, sales reports with charts, and much more. All data is stored locally using **SQLite**, with no internet connection required.
 
-<!-- 📸 IMAGE: Screenshot of the dashboard showing stat cards and charts. Save as `screenshots/dashboard.png` and uncomment the line below. -->
-<!-- ![Dashboard](screenshots/dashboard.png) -->
+
+![Dashboard](screenshots/dashboard.png)
 
 ---
 
@@ -34,14 +34,14 @@ Omni Inventory Pro V2 is a complete rebuild of V1 — upgraded from a Python des
 - **Offline & Local** — No internet required; all data is stored in a local SQLite database
 - **MSI Installer** — Compiles into a Windows `.msi` installer for clean system-wide installation
 
-<!-- 📸 IMAGE: Screenshot of the POS screen with items selected. Save as `screenshots/pos.png` and uncomment the line below. -->
-<!-- ![Point of Sale](screenshots/pos.png) -->
 
-<!-- 📸 IMAGE: Screenshot of the inventory screen. Save as `screenshots/inventory.png` and uncomment the line below. -->
-<!-- ![Inventory](screenshots/inventory.png) -->
+![Point of Sale](screenshots/pos.png)
 
-<!-- 📸 IMAGE: Screenshot of the Reports page showing charts. Save as `screenshots/reports.png` and uncomment the line below. -->
-<!-- ![Reports](screenshots/reports.png) -->
+
+![Inventory](screenshots/inventory.png)
+
+
+![Reports](screenshots/reports.png)
 
 ---
 
@@ -76,8 +76,10 @@ The app runs a local **Express** server in the background (started automatically
 
 State is managed globally using **Zustand**, while React Hook Form and Zod handle form validation. The entire app is packaged into a Windows `.msi` installer using **electron-builder**, meaning end users get a clean one-click installation experience.
 
-<!-- 📸 IMAGE: Screenshot of the Users & Roles page. Save as `screenshots/users.png` and uncomment the line below. -->
-<!-- ![Users & Roles](screenshots/users.png) -->
+
+![Users & Roles](screenshots/users.png)
+
+![Attendance](screenshots/attendance.png)
 
 ---
 
@@ -86,6 +88,17 @@ State is managed globally using **Zustand**, while React Hook Form and Zod handl
 ### Running the Installed App
 
 If you downloaded the `.msi` installer, run it and follow the on-screen steps. The app will be installed system-wide and a shortcut will be created automatically.
+
+### Default Login Credentials
+
+When you first launch the app, use these credentials to log in:
+
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Password | `admin123` |
+
+> **Important:** Change the admin password immediately after your first login via the Users & Roles page.
 
 ### Running from Source
 
@@ -99,6 +112,34 @@ If you downloaded the `.msi` installer, run it and follow the on-screen steps. T
    ```bash
    npm run electron:dev
    ```
+
+### Migrating Data from V1
+
+If you were using **Omni Inventory Pro V1** (the Python version) and want to bring your existing products, bills, and settings into V2, use the included migration tool.
+
+**What gets migrated:**
+- All products (including batch number, MFG date, and expiry date)
+- All bills and their items
+- Stock threshold settings (low stock and very low stock levels)
+
+**What does NOT migrate:**
+- The admin user and roles — these are kept from V2
+- Attendance records — V1 did not have this feature
+
+**Before you start:**
+1. Make sure **Omni Inventory Pro V2 is already installed** and has been launched at least once — this creates the V2 database
+2. Make sure **Python 3.10+** is installed on your PC
+3. The migration tool automatically backs up your V2 database before making any changes, so your data is safe
+
+**Steps:**
+1. Copy `migrate_v1_to_v2.bat` into the same folder as your V1 `inventory.db` file
+2. Double-click `migrate_v1_to_v2.bat` to run it
+3. The tool will automatically find your V2 installation. If it can't find it, it will ask you to enter the path manually
+4. Type `YES` when prompted to confirm
+5. Wait for the migration to complete — it will show a summary of how many products and bills were migrated
+6. Launch V2 and verify your data
+
+> **Note:** If anything goes wrong, your original V2 database was backed up automatically before the migration started. The backup file will be in the same folder as the V2 database with a timestamp in the filename.
 
 ### Compiling the App
 
@@ -161,4 +202,4 @@ When reporting a bug, please include:
 - Your Node.js version and operating system
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
-> I may not respond to any emails
+> I might not respond to emails
