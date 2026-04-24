@@ -1,0 +1,6 @@
+node_modules/
+dist/
+dist_msi/
+.env
+*.db
+.vite/
