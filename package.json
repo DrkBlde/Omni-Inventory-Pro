@@ -63,7 +63,7 @@
     "react-router-dom": "^6.22.3",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
-    "sqlite3": "^5.1.6",
+    "sqlite3": "^6.0.1",
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
@@ -77,13 +77,13 @@
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.1",
-    "electron": "^26.2.1",
-    "electron-builder": "^24.6.4",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^8.56.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.3.3",
-    "vite": "^4.4.5",
+    "vite": "^8.0.10",
     "vite-plugin-electron": "^0.15.4"
   },
   "build": {
@@ -94,7 +94,9 @@
       "output": "dist_msi"
     },
     "win": {
-      "target": ["msi"],
+      "target": [
+        "msi"
+      ],
       "icon": "public/icon.ico"
     },
     "msi": {
@@ -114,5 +116,7 @@
       "./server/**",
       "./electron/icon.ico"
     ]
-  }
+  },
+  "author": "DrkBlde",
+  "description": "A full-featured offline-first desktop inventory management system for small businesses."
 }
