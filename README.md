@@ -1,100 +1,133 @@
 <p align="center">
-  <img src="app_icon.png" alt="Omni Inventory Pro" width="350"/>
+  <img src="app_icon_preview.png" alt="Omni Inventory Pro" width="120"/>
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
 
-<p align="center">A lightweight, offline-first desktop inventory management system built for small businesses.</p>
+<p align="center">A full-featured, offline-first desktop inventory management system built for small businesses.</p>
 
+<!-- 📸 IMAGE: Add a banner/hero image here. Wide screenshot of the dashboard. Recommended size: 1280×400px. Save as `screenshots/banner.png` and uncomment the line below. -->
+<!-- ![Omni Inventory Pro Banner](screenshots/banner.png) -->
 
 ---
 
 ## About the Project
 
-Omni Inventory Pro is a desktop application that helps small businesses manage their stock, generate bills, and track sales — all without needing an internet connection. It runs entirely on your local machine with a built-in database, making it fast, private, and simple to use.
+Omni Inventory Pro V2 is a complete rebuild of V1 — upgraded from a Python desktop app to a modern **Electron + React** desktop application. It introduces a full login system, role-based access control, a Point of Sale screen, staff attendance tracking, sales reports with charts, and much more. All data is stored locally using **SQLite**, with no internet connection required.
 
-This is **Version 1** of the app, built as a standalone Python desktop application.
-
-
-![Welcome Screen](screenshots/welcome.png)
+<!-- 📸 IMAGE: Screenshot of the dashboard showing stat cards and charts. Save as `screenshots/dashboard.png` and uncomment the line below. -->
+<!-- ![Dashboard](screenshots/dashboard.png) -->
 
 ---
 
 ## Features
 
-- **Inventory Management** — Add, edit, delete, and search products with full stock tracking
-- **Billing & Invoicing** — Create bills, assign items to customers, and auto-update stock on sale
-- **Bill History** — View, search, and manage all past bills with full item breakdowns
-- **QR Code Verification** — Verify bills using QR code scanning via webcam
-- **PDF Bill Generation** — Save bills as PDF documents with an embedded QR code
-- **Stock Threshold Alerts** — Set low and very-low stock thresholds with visual status indicators
-- **Dark / Light Mode** — Toggle between themes; preference is saved between sessions
+- **Login & Authentication** — Secure login system with hashed passwords; sessions are protected with role-based access control
+- **Dashboard** — At-a-glance overview of today's revenue, total orders, stock alerts, expiry warnings, and a 7-day sales chart
+- **Inventory Management** — Add, edit, delete, and search products with batch tracking, expiry dates, and stock threshold alerts
+- **Point of Sale (POS)** — Full billing screen with product search, quantity selection, multi-payment support (cash, UPI, card), and bill generation
+- **Bill History** — View, search, and manage all past bills with full item breakdowns and cancellation support
+- **Reports** — Revenue trend charts, top products by revenue, and a pie chart breakdown of sales categories
+- **User & Role Management** — Create users, define custom roles, assign granular permissions, and deactivate accounts
+- **Staff Attendance** — Clock-in and clock-out tracking for staff members
+- **App Settings** — Configure store name, currency, logo, stock thresholds, and perform full database resets
 - **Offline & Local** — No internet required; all data is stored in a local SQLite database
+- **MSI Installer** — Compiles into a Windows `.msi` installer for clean system-wide installation
 
+<!-- 📸 IMAGE: Screenshot of the POS screen with items selected. Save as `screenshots/pos.png` and uncomment the line below. -->
+<!-- ![Point of Sale](screenshots/pos.png) -->
 
-![Inventory Screen](screenshots/inventory.png)
+<!-- 📸 IMAGE: Screenshot of the inventory screen. Save as `screenshots/inventory.png` and uncomment the line below. -->
+<!-- ![Inventory](screenshots/inventory.png) -->
 
-
-![Billing Screen](screenshots/billing.png)
-
-
-![Light Mode](screenshots/lightmode.png)
+<!-- 📸 IMAGE: Screenshot of the Reports page showing charts. Save as `screenshots/reports.png` and uncomment the line below. -->
+<!-- ![Reports](screenshots/reports.png) -->
 
 ---
 
-## Libraries Used
+## Libraries & Technologies Used
 
-| Library | Purpose |
+| Library / Technology | Purpose |
 |---|---|
-| [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) | Modern themed UI framework built on top of Tkinter |
-| [OpenCV (`opencv-python`)](https://github.com/opencv/opencv-python) | Webcam access for QR code scanning |
-| [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar) | QR code and barcode decoding |
-| [fpdf2](https://py-pdf.github.io/fpdf2/) | PDF generation for printed bills |
-| [qrcode](https://github.com/lincolnloop/python-qrcode) | QR code generation embedded in bill PDFs |
-| [SQLite3](https://docs.python.org/3/library/sqlite3.html) | Built-in Python library used for local database storage |
-| [PyInstaller](https://pyinstaller.org/) | Packages the app into a standalone Windows `.exe` |
+| [Electron](https://www.electronjs.org/) | Desktop app shell — wraps the React frontend into a native Windows app |
+| [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) | Frontend UI framework |
+| [Vite](https://vitejs.dev/) | Frontend build tool and dev server |
+| [Tailwind CSS](https://tailwindcss.com/) | Utility-first CSS framework for styling |
+| [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) | Accessible, pre-built UI components |
+| [Zustand](https://github.com/pmndrs/zustand) | Lightweight global state management |
+| [Express](https://expressjs.com/) | Local backend server that handles database operations |
+| [SQLite3](https://github.com/TryGhost/node-sqlite3) | Local database for all app data |
+| [bcryptjs](https://github.com/dcodeIO/bcrypt.js) | Password hashing for secure login |
+| [Recharts](https://recharts.org/) | Charts for the dashboard and reports pages |
+| [React Router](https://reactrouter.com/) | Client-side routing between pages |
+| [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) | Form handling and validation |
+| [TanStack Query](https://tanstack.com/query) | Server state management and data fetching |
+| [electron-builder](https://www.electron.build/) | Packages the app into a Windows `.msi` installer |
+| [date-fns](https://date-fns.org/) | Date formatting and manipulation |
+| [Lucide React](https://lucide.dev/) | Icon library |
 
 ---
 
 ## Software Overview
 
-Omni Inventory Pro V1 is built entirely in **Python**. The UI is built using **CustomTkinter**, a modern extension of Python's built-in Tkinter library that provides a clean, themed interface with support for both light and dark modes.
+Omni Inventory Pro V2 is a complete rebuild using **TypeScript**, **React**, and **Electron**. The frontend is built with React and styled using Tailwind CSS with shadcn/ui components, giving it a clean, modern interface. Vite handles the frontend build and development server.
 
-The app is structured across three main files: `ui.py` handles all screens and user interactions, `database.py` manages all data operations using a local **SQLite** database (`inventory.db`), and `printing_manager.py` handles PDF bill generation.
+The app runs a local **Express** server in the background (started automatically by Electron on launch) which handles all database operations using **SQLite**. The frontend communicates with this local server via API calls — the same way a web app would, except everything runs entirely on your local machine with no internet required.
 
-When you run the app, it initialises the database automatically on first launch, creating all required tables. From there, all data — products, bills, settings — is stored and read locally with no external server or internet connection required.
+State is managed globally using **Zustand**, while React Hook Form and Zod handle form validation. The entire app is packaged into a Windows `.msi` installer using **electron-builder**, meaning end users get a clean one-click installation experience.
 
-The app is packaged into a standalone Windows executable using **PyInstaller**, meaning end users do not need Python installed to run it.
+<!-- 📸 IMAGE: Screenshot of the Users & Roles page. Save as `screenshots/users.png` and uncomment the line below. -->
+<!-- ![Users & Roles](screenshots/users.png) -->
 
 ---
 
 ## How to Use
 
-### Running the Compiled App
+### Running the Installed App
 
-If you have downloaded the compiled `.exe`, simply run it — no installation or Python required.
+If you downloaded the `.msi` installer, run it and follow the on-screen steps. The app will be installed system-wide and a shortcut will be created automatically.
 
 ### Running from Source
 
-1. Make sure you have **Python 3.10 or higher** installed — download from [python.org](https://www.python.org/downloads/)
+1. Make sure you have **Node.js 18+** installed — download from [nodejs.org](https://nodejs.org/)
 2. Clone or download this repository
-3. Install the required libraries:
+3. Install dependencies:
    ```bash
-   pip install customtkinter opencv-python pyzbar fpdf2 qrcode pyinstaller
+   npm install
    ```
-4. Run the app:
+4. Run the app in development mode:
    ```bash
-   python ui.py
+   npm run electron:dev
    ```
 
 ### Compiling the App
 
-To build your own `.exe` from the source code, refer to the **[`app building command.txt`](app%20building%20command.txt)** file included in this repository. It contains the exact PyInstaller command and an explanation of every flag used.
+To build your own `.msi` installer from source, run:
 
-You will need PyInstaller installed before building:
 ```bash
-pip install pyinstaller
+npm run dist
 ```
+
+This will first build the React frontend with Vite, then package everything into a Windows `.msi` installer using electron-builder. The output will be in the `dist_msi/` folder.
+
+Make sure all dependencies are installed (`npm install`) before building.
+
+---
+
+## What Changed from V1
+
+| | V1 | V2 |
+|---|---|---|
+| Language | Python | TypeScript + React |
+| UI Framework | CustomTkinter | Electron + shadcn/ui |
+| Database | SQLite via Python | SQLite via Node/Express |
+| Login System | ❌ | ✅ |
+| Role-Based Access | ❌ | ✅ |
+| Dashboard & Charts | ❌ | ✅ |
+| POS Screen | Basic billing | Full POS with payments |
+| Reports | ❌ | ✅ |
+| Staff Attendance | ❌ | ✅ |
+| Installer | `.exe` (PyInstaller) | `.msi` (electron-builder) |
 
 ---
 
@@ -125,8 +158,6 @@ Found a bug, have a suggestion, or want to request permission for commercial use
 When reporting a bug, please include:
 - What you were doing when the issue occurred
 - Any error messages you saw
-- if you encounter a glitch, specify if the glitch is reproducible or not
-- Your operating system and Python version (if running from source)
+- Your Node.js version and operating system
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
-> I may not respond to emails immediately
