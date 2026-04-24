@@ -1,9 +1,13 @@
 <p align="center">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <img src="app_icon_preview.png" alt="Omni Inventory Pro" width="120"/>
 =======
   <img src="app_icon.png" alt="Omni Inventory Pro" width="120"/>
 >>>>>>> 9f40005a738008f338658c65242a24e04ddcef97
+=======
+  <img src="app_icon.png" alt="Omni Inventory Pro" width="120"/>
+>>>>>>> 499eb2d2d3f04314d5c42711b01e287e8210a92b
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
@@ -11,8 +15,11 @@
 <p align="center">A lightweight, offline-first desktop inventory management system built for small businesses.</p>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <!-- 📸 IMAGE: Add a banner/hero image here. Wide screenshot of the welcome screen or dashboard. Recommended size: 1280×400px. Save as `screenshots/banner.png` and uncomment the line below. -->
 <!-- ![Omni Inventory Pro Banner](screenshots/banner.png) -->
+=======
+>>>>>>> 499eb2d2d3f04314d5c42711b01e287e8210a92b
 
 =======
 >>>>>>> 9f40005a738008f338658c65242a24e04ddcef97
@@ -25,11 +32,16 @@ Omni Inventory Pro is a desktop application that helps small businesses manage t
 This is **Version 1** of the app, built as a standalone Python desktop application.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <!-- 📸 IMAGE: Screenshot of the welcome/home screen. Save as `screenshots/welcome.png` and uncomment the line below. -->
 =======
 
 >>>>>>> 9f40005a738008f338658c65242a24e04ddcef97
 <!-- ![Welcome Screen](screenshots/welcome.png) -->
+=======
+
+![Welcome Screen](screenshots/welcome.png)
+>>>>>>> 499eb2d2d3f04314d5c42711b01e287e8210a92b
 
 ---
 
@@ -45,12 +57,15 @@ This is **Version 1** of the app, built as a standalone Python desktop applicati
 - **Offline & Local** — No internet required; all data is stored in a local SQLite database
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <!-- 📸 IMAGE: Screenshot of the inventory/product list screen. Save as `screenshots/inventory.png` and uncomment the line below. -->
 <!-- ![Inventory Screen](screenshots/inventory.png) -->
+=======
+>>>>>>> 499eb2d2d3f04314d5c42711b01e287e8210a92b
 
-<!-- 📸 IMAGE: Screenshot of the billing screen with a bill being created. Save as `screenshots/billing.png` and uncomment the line below. -->
-<!-- ![Billing Screen](screenshots/billing.png) -->
+![Inventory Screen](screenshots/inventory.png)
 
+<<<<<<< HEAD
 <!-- 📸 IMAGE: Screenshot of the app in dark mode. Save as `screenshots/dark_mode.png` and uncomment the line below. -->
 <!-- ![Dark Mode](screenshots/dark_mode.png) -->
 =======
@@ -65,6 +80,13 @@ This is **Version 1** of the app, built as a standalone Python desktop applicati
 
 <!-- ![Light Mode](screenshots/light_mode.png) -->
 >>>>>>> 9f40005a738008f338658c65242a24e04ddcef97
+=======
+
+![Billing Screen](screenshots/billing.png)
+
+
+![Light Mode](screenshots/lightmode.png)
+>>>>>>> 499eb2d2d3f04314d5c42711b01e287e8210a92b
 
 ---
 
@@ -152,5 +174,7 @@ When reporting a bug, please include:
 - What you were doing when the issue occurred
 - Any error messages you saw
 - Your operating system and Python version (if running from source)
+- If you experience any glitch, mention if the glitch is reproducible or not
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
+>I may not respond at all to any requests or emails
