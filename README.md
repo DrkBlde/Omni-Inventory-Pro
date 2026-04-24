@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app_icon.png" alt="Omni Inventory Pro" width="450"/>
+  <img src="app_icon.png" alt="Omni Inventory Pro" width="350"/>
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
