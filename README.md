@@ -202,4 +202,3 @@ When reporting a bug, please include:
 - Your Node.js version and operating system
 
 When requesting commercial use permission, describe your intended use clearly and wait for a response before proceeding.
-> I might not respond to emails
