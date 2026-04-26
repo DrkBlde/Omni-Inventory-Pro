@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore, ALL_PERMISSIONS } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";

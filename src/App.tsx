@@ -8,12 +8,12 @@ import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
-import POS from "./pages/POS";
+import POS from "./pages/pos";
 import Reports from "./pages/Reports";
 import UsersRoles from "./pages/UsersRoles";
 import Attendance from "./pages/Attendance";
 import AppSettings from "./pages/AppSettings";
-import BillHistory from "./pages/BillHistory";
+import BillHistory from "./pages/billhistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

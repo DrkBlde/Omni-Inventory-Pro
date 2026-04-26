@@ -1,29 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Calendar, TrendingUp, Receipt, XCircle } from "lucide-react";
+import { Calendar, TrendingUp, Receipt, XCircle, Loader2 } from "lucide-react";
 
 const COLORS = ['hsl(0,0%,100%)', 'hsl(0,0%,70%)', 'hsl(0,0%,50%)', 'hsl(0,0%,35%)', 'hsl(0,0%,20%)'];
 
 const Reports = () => {
-  const { bills, products, settings } = useAppStore();
+  const { bills, products, settings, refreshFromServer } = useAppStore();
   const [period, setPeriod] = useState<'7d' | '30d' | 'all'>('7d');
-  const currency = settings.currency;
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Refresh data on mount
+  useEffect(() => {
+    refreshFromServer().then(() => setIsHydrated(true)).catch(() => setIsHydrated(true));
+  }, []);
+
+  const currency = settings?.currency || '₹';
+
+  // Guard against undefined data during hydration
+  if (!isHydrated) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Loading reports data...</p>
+      </div>
+    );
+  }
+
+  // Handle empty data gracefully
+  const billsArray = bills || [];
+  const productsArray = products || [];
 
   const now = new Date();
-  const filteredBills = bills.filter(b => {
+  const filteredBills = billsArray.filter((b: any) => {
     if (period === 'all') return true;
     const d = new Date(b.createdAt);
     const diff = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
     return period === '7d' ? diff <= 7 : diff <= 30;
   });
 
-  const activeBills = filteredBills.filter(b => !b.isCancelled);
-  const cancelledBills = filteredBills.filter(b => b.isCancelled);
-  const totalRevenue = activeBills.reduce((s, b) => s + b.total, 0);
+  const activeBills = filteredBills.filter((b: any) => !b.isCancelled);
+  const cancelledBills = filteredBills.filter((b: any) => b.isCancelled);
+  const totalRevenue = activeBills.reduce((s: number, b: any) => s + b.total, 0);
   const avgOrderValue = activeBills.length > 0 ? totalRevenue / activeBills.length : 0;
 
   // Sales over time
@@ -31,17 +52,17 @@ const Reports = () => {
   const salesData = Array.from({ length: Math.min(days, 30) }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (Math.min(days, 30) - 1 - i));
-    const dayBills = activeBills.filter(b => new Date(b.createdAt).toDateString() === date.toDateString());
+    const dayBills = activeBills.filter((b: any) => new Date(b.createdAt).toDateString() === date.toDateString());
     return {
       date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-      revenue: dayBills.reduce((s, b) => s + b.total, 0),
+      revenue: dayBills.reduce((s: number, b: any) => s + b.total, 0),
       orders: dayBills.length,
     };
   });
 
   // Top products by revenue
   const productRevenue: Record<string, number> = {};
-  activeBills.forEach(b => b.items.forEach(i => {
+  activeBills.forEach((b: any) => b.items.forEach((i: any) => {
     productRevenue[i.name] = (productRevenue[i.name] || 0) + i.price * i.quantity;
   }));
   const topProducts = Object.entries(productRevenue)
@@ -51,7 +72,7 @@ const Reports = () => {
 
   // Payment methods breakdown
   const methodTotals: Record<string, number> = {};
-  activeBills.forEach(b => b.payments.forEach(p => {
+  activeBills.forEach((b: any) => b.payments.forEach((p: any) => {
     methodTotals[p.method] = (methodTotals[p.method] || 0) + p.amount;
   }));
   const paymentData = Object.entries(methodTotals).map(([name, value]) => ({ name: name.toUpperCase(), value }));
@@ -110,7 +131,7 @@ const Reports = () => {
               </defs>
               <XAxis dataKey="date" tick={{ fill: 'hsl(0,0%,55%)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'hsl(0,0%,55%)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'hsl(0,0%,8%)', border: '1px solid hsl(0,0%,16%)', borderRadius: 8, color: 'hsl(0,0%,95%)' }} />
+              <Tooltip contentStyle={{ background: 'hsl(0,0%,8%)', border: '1px solid hsl(0,0%,16%)', borderRadius: 8, color: '#ffffff' }} />
               <Area type="monotone" dataKey="revenue" stroke="hsl(0,0%,100%)" fillOpacity={1} fill="url(#revGrad)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -125,7 +146,11 @@ const Reports = () => {
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(0,0%,8%)', border: '1px solid hsl(0,0%,16%)', borderRadius: 8, color: 'hsl(0,0%,95%)' }} />
+              <Tooltip 
+                contentStyle={{ background: 'hsl(0,0%,8%)', border: '1px solid hsl(0,0%,16%)', borderRadius: 8, color: '#ffffff' }} 
+                itemStyle={{ color: '#ffffff' }}
+                labelStyle={{ color: '#ffffff' }}
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex justify-center gap-4 mt-2">

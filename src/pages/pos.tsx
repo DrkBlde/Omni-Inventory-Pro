@@ -7,24 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  ShoppingCart, 
-  CreditCard, 
-  Banknote, 
-  Smartphone, 
-  User, 
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  User,
   PackageX,
   X,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { generateBillCancellationQRCode } from "@/lib/cryptoUtils";
 
 const POS = () => {
   // Destructure updateBill and bills from the store
-  const { products, createBill, updateBill, bills, customers, addCustomer } = useAppStore();
+  const { products, createBill, updateBill, customers, addCustomer, refreshFromServer } = useAppStore();
   const { settings } = useSettingsStore();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<BillItem[]>([]);
@@ -35,13 +37,22 @@ const POS = () => {
   const [newCustomerDialog, setNewCustomerDialog] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' });
   const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Refresh data from server on mount
   useEffect(() => {
-    if (location.state?.billToEdit) {
+    refreshFromServer().then(() => setIsHydrated(true)).catch(() => setIsHydrated(true));
+  }, []);
+
+  // Handle bill to edit from navigation
+  useEffect(() => {
+    if (location.state?.billToEdit && isHydrated) {
       const editData = location.state.billToEdit;
       setBillToEdit(editData);
 
@@ -57,13 +68,13 @@ const POS = () => {
         setSelectedCustomer({
           id: editData.customerId,
           name: editData.customerName || 'Walk-in',
-          phone: editData.customerPhone || '' 
+          phone: editData.customerPhone || ''
         } as Customer);
       }
 
       setPayments(editData.payments);
     }
-  }, [location.state?.billToEdit]);
+  }, [location.state?.billToEdit, isHydrated]);
 
   const currency = settings?.currency || '₹';
   const gstRate = Number(settings?.gstPercentage) || 0;
@@ -85,61 +96,113 @@ const POS = () => {
     c.phone.includes(customerSearch)
   );
 
-  const printReceipt = (bill: Bill) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+  const printReceipt = async (bill: Bill) => {
+    try {
+      const gstBlock = bill.gstPercentage > 0 ? `
+        <div class="divider"></div>
+        <div class="row"><span>Taxable Value</span><span>${currency}${bill.taxableAmount.toFixed(2)}</span></div>
+        <div class="row"><span>GST (${bill.gstPercentage}%)</span><span>${currency}${bill.totalGst.toFixed(2)}</span></div>
+      ` : '';
 
-    const gstBlock = bill.gstPercentage > 0 ? `
-      <div class="divider"></div>
-      <div class="row"><span>Taxable Value</span><span>${currency}${bill.taxableAmount.toFixed(2)}</span></div>
-      <div class="row"><span>GST (${bill.gstPercentage}%)</span><span>${currency}${bill.totalGst.toFixed(2)}</span></div>
-    ` : '';
+      // Generate AES-256 encrypted QR code for bill cancellation
+      // The QR contains encrypted data that can only be decrypted by this app
+      let qrCodeHtml = '';
+      try {
+        const qrCodeData = await generateBillCancellationQRCode(bill.id, bill.billNumber);
+        qrCodeHtml = `
+          <div class="qr-code" style="margin-top:15px;margin-bottom:10px;">
+            <img src="${qrCodeData}" alt="Cancel QR Code" width="120" height="120" style="image-rendering:pixelated;"/>
+            <div class="text-center" style="font-size:9px;margin-top:5px;font-weight:bold;">SCAN TO CANCEL</div>
+          </div>`;
+      } catch (qrErr) {
+        console.error('QR generation error:', qrErr);
+        // Fallback: show bill ID for reference
+        qrCodeHtml = `
+          <div class="qr-code" style="margin-top:15px;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:bold;border:2px dashed #000;padding:8px;">
+              Bill #${bill.billNumber}<br/>
+              <span style="font-size:9px;">ID: ${bill.id}</span>
+            </div>
+          </div>`;
+      }
 
-    const receiptHtml = `
-      <html>
-        <head>
-          <title>Receipt #${bill.billNumber}</title>
-          <style>
-            body { font-family: 'Courier New', Courier, monospace; width: 80mm; padding: 10px; margin: 0; font-size: 13px; color: #000; }
-            .text-center { text-align: center; }
-            .bold { font-weight: bold; }
-            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-            .row { display: flex; justify-content: space-between; margin: 2px 0; }
-            .header { font-size: 16px; margin-bottom: 4px; }
-            .footer { margin-top: 15px; font-size: 11px; }
-          </style>
-        </head>
-        <body>
-          <div class="text-center">
-            <div class="header bold">${bill.storeName}</div>
-            ${bill.storeAddress ? `<div>${bill.storeAddress}</div>` : ''}
-            ${bill.storePhone ? `<div>Ph: ${bill.storePhone}</div>` : ''}
-            ${bill.gstNumber ? `<div class="bold" style="margin-top:4px">GSTIN: ${bill.gstNumber}</div>` : ''}
-          </div>
-          <div class="divider"></div>
-          <div class="row"><span>Bill No:</span><span class="bold">${bill.billNumber}</span></div>
-          <div class="row"><span>Date:</span><span>${new Date(bill.createdAt).toLocaleString('en-IN')}</span></div>
-          <div class="row"><span>Customer:</span><span>${bill.customerName || 'Walk-in'}</span></div>
-          <div class="divider"></div>
-          <div class="row bold"><span style="flex: 2">Item</span><span style="flex: 1; text-align: center">Qty</span><span style="flex: 1; text-align: right">Price</span></div>
-          ${bill.items.map((item: any) => `
+      const printWindow = window.open('', '_blank', 'width=400,height=700');
+      if (!printWindow) {
+        toast({ title: "Print blocked", description: "Please allow popups for this site", variant: "destructive" });
+        return;
+      }
+
+      const itemsHtml = bill.items && bill.items.length > 0
+        ? bill.items.map((item: any) => `
             <div class="row">
               <span style="flex: 2">${item.name}</span>
               <span style="flex: 1; text-align: center">${item.quantity}</span>
               <span style="flex: 1; text-align: right">${currency}${(item.price * item.quantity).toFixed(2)}</span>
             </div>
-          `).join('')}
-          ${gstBlock}
-          <div class="divider"></div>
-          <div class="row bold" style="font-size: 1.3em; margin-top: 5px;"><span>NET TOTAL</span><span>${currency}${bill.total.toFixed(2)}</span></div>
-          <div class="divider"></div>
-          <div class="text-center footer"><p class="bold">THANK YOU FOR VISITING!</p></div>
-          <script>window.onload = () => { window.print(); window.close(); }</script>
-        </body>
-      </html>
-    `;
-    printWindow.document.write(receiptHtml);
-    printWindow.document.close();
+          `).join('')
+        : '<p>No items</p>';
+
+      const receiptHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Receipt #${bill.billNumber}</title>
+            <style>
+              body { font-family: 'Courier New', Courier, monospace; width: 80mm; padding: 10px; margin: 0; font-size: 13px; color: #000; background: #fff; }
+              .text-center { text-align: center; }
+              .bold { font-weight: bold; }
+              .divider { border-top: 1px dashed #000; margin: 8px 0; }
+              .row { display: flex; justify-content: space-between; margin: 2px 0; }
+              .header { font-size: 16px; margin-bottom: 4px; }
+              .footer { margin-top: 15px; font-size: 11px; }
+              .qr-code { text-align: center; }
+              @media print { body { padding: 0; } }
+            </style>
+          </head>
+          <body>
+            <div class="text-center">
+              <div class="header bold">${bill.storeName || 'Store'}</div>
+              ${bill.storeAddress ? `<div>${bill.storeAddress}</div>` : ''}
+              ${bill.storePhone ? `<div>Ph: ${bill.storePhone}</div>` : ''}
+              ${bill.gstNumber ? `<div class="bold" style="margin-top:4px">GSTIN: ${bill.gstNumber}</div>` : ''}
+            </div>
+            <div class="divider"></div>
+            <div class="row"><span>Bill No:</span><span class="bold">${bill.billNumber}</span></div>
+            <div class="row"><span>Date:</span><span>${new Date(bill.createdAt).toLocaleString('en-IN')}</span></div>
+            <div class="row"><span>Customer:</span><span>${bill.customerName || 'Walk-in'}</span></div>
+            <div class="divider"></div>
+            <div class="row bold"><span style="flex: 2">Item</span><span style="flex: 1; text-align: center">Qty</span><span style="flex: 1; text-align: right">Price</span></div>
+            ${itemsHtml}
+            ${gstBlock}
+            <div class="divider"></div>
+            <div class="row bold" style="font-size: 1.3em; margin-top: 5px;"><span>NET TOTAL</span><span>${currency}${bill.total.toFixed(2)}</span></div>
+            <div class="divider"></div>
+            <div class="text-center" style="margin:8px 0 4px;"><strong>PAYMENT(S):</strong></div>
+            ${(bill.payments || []).map(p => `
+              <div class="row"><span>${p.method.toUpperCase()}</span><span>${currency}${p.amount.toLocaleString()}</span></div>
+            `).join('')}
+            ${qrCodeHtml}
+            <div class="divider"></div>
+            <div class="text-center footer" style="margin-top:10px;"><p class="bold">*** THANK YOU FOR VISITING! ***</p></div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.close();
+                }, 300);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.open();
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+    } catch (err) {
+      console.error('Print error:', err);
+      toast({ title: "Print Error", description: err instanceof Error ? err.message : "Failed to open print dialog", variant: "destructive" });
+    }
   };
 
   const addToCart = (product: any) => {
@@ -178,11 +241,14 @@ const POS = () => {
     setCart(prev => prev.filter(i => i.productId !== productId));
   };
 
-  const handleCompleteBill = () => {
+  const handleCompleteBill = async () => {
     if (paymentTotal < cartSubtotal) {
       toast({ title: "Insufficient payment", variant: "destructive" });
       return;
     }
+
+    if (isProcessing) return;
+    setIsProcessing(true);
 
     const billSettings = {
       storeName: settings.storeName,
@@ -193,31 +259,37 @@ const POS = () => {
       defaultBillType: settings.defaultBillType,
     };
 
-    if (billToEdit) {
-      // --- UPDATE EXISTING BILL ---
-      updateBill(billToEdit.id, cart, payments, selectedCustomer || undefined, billSettings);
-      
-      // Get updated bill from store for printing
-      const updated = useAppStore.getState().bills.find(b => b.id === billToEdit.id);
-      if (updated) printReceipt(updated);
-      
-      toast({ title: "Bill Updated", description: `Bill #${billToEdit.billNumber} modified.` });
-    } else {
-      // --- CREATE NEW BILL ---
-      const bill = createBill(cart, payments, selectedCustomer || undefined, billSettings);
-      printReceipt(bill);
-      toast({ title: "Transaction Completed", description: `Bill #${bill.billNumber} generated.` });
-    }
-    
-    // Reset Everything
-    setCart([]);
-    setPayments([{ method: 'cash', amount: 0 }]);
-    setSelectedCustomer(null);
-    setBillToEdit(null);
-    setPaymentDialog(false);
+    try {
+      if (billToEdit) {
+        // --- UPDATE EXISTING BILL ---
+        await updateBill(billToEdit.id, cart, payments, selectedCustomer || undefined, billSettings);
 
-    // Clear URL state to prevent re-triggering edit on refresh
-    window.history.replaceState({}, document.title);
+        // Get updated bill from store for printing
+        const updated = useAppStore.getState().bills.find(b => b.id === billToEdit.id);
+        if (updated) printReceipt(updated);
+
+        toast({ title: "Bill Updated", description: `Bill #${billToEdit.billNumber} modified.` });
+      } else {
+        // --- CREATE NEW BILL ---
+        const bill = await createBill(cart, payments, selectedCustomer || undefined, billSettings);
+        printReceipt(bill);
+        toast({ title: "Transaction Completed", description: `Bill #${bill.billNumber} generated.` });
+      }
+
+      // Reset Everything
+      setCart([]);
+      setPayments([{ method: 'cash', amount: 0 }]);
+      setSelectedCustomer(null);
+      setBillToEdit(null);
+      setPaymentDialog(false);
+
+      // Clear URL state to prevent re-triggering edit on refresh
+      window.history.replaceState({}, document.title);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAddCustomer = () => {
@@ -233,6 +305,16 @@ const POS = () => {
   };
 
   const paymentIcons = { cash: Banknote, upi: Smartphone, card: CreditCard };
+
+  // Loading state for bill edit
+  if (!isHydrated) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Loading POS data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4">

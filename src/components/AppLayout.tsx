@@ -1,9 +1,10 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppStore } from "@/lib/store";
+import { api } from "@/lib/api";
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart3, Users, Settings,
-  LogOut, Menu, X, Clock, ChevronRight, Receipt
+  LogOut, Menu, X, Clock, ChevronRight, Receipt, Wifi, WifiOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +21,30 @@ const navItems = [
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, logout, roles } = useAppStore();
+  const { currentUser, logout, roles, isOnline: storeOnline, startAutoSync, stopAutoSync } = useAppStore();
+
+  // Start auto-sync for real-time updates across all devices
+  useEffect(() => {
+    // Initial sync on mount
+    useAppStore.getState().refreshFromServer();
+    // Then sync every 5 seconds
+    startAutoSync(5000);
+    return () => stopAutoSync();
+  }, []);
+
+  // Check server connection periodically
+  useEffect(() => {
+    const checkConnection = async () => {
+      const online = await api.health().catch(() => false);
+      setIsOnline(!!online);
+    };
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const userRole = roles.find(r => r.name === currentUser?.role);
   const hasPermission = (perm: string | null) => {
@@ -105,6 +127,20 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
           <div className="flex items-center gap-3">
+            {/* Server Connection Status */}
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors",
+              isOnline || storeOnline
+                ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                : "bg-red-500/10 text-red-400 border border-red-500/20"
+            )} title={isOnline || storeOnline ? "Connected to server" : "Server disconnected"}>
+              {isOnline || storeOnline ? (
+                <Wifi className="w-3.5 h-3.5" />
+              ) : (
+                <WifiOff className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">{isOnline || storeOnline ? "Online" : "Offline"}</span>
+            </div>
             <div className="w-8 h-8 rounded-full glass flex items-center justify-center text-xs font-bold">
               {currentUser?.fullName?.charAt(0) || 'U'}
             </div>

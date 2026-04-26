@@ -1,23 +1,39 @@
 import { useAppStore } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { StatusBadge, getStockStatus } from "@/components/StatusBadge";
-import { 
-  Package, 
-  ShoppingCart, 
-  AlertTriangle, 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
-  Clock, 
-  AlertCircle 
+import { ServerStatus } from "@/components/ServerStatus";
+import {
+  Package,
+  ShoppingCart,
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 
 const Dashboard = () => {
-  const { products, bills, users, settings, getExpiryAlerts } = useAppStore();
+  const { products, bills, users, settings, getExpiryAlerts, hasPermission, roles } = useAppStore();
+
+  // Wait for roles to load before checking permissions
+  if (!roles || roles.length === 0) {
+    return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  // Check if user can view dashboard
+  if (!hasPermission('dashboard.view')) {
+    return <div className="p-6 text-center text-muted-foreground">Access Denied: Dashboard</div>;
+  }
 
   // 1. Fetch Expiry Alerts
   const expiryAlerts = getExpiryAlerts();
+
+  // Determine which widgets to show based on settings and permissions
+  const showStats = hasPermission('dashboard.customize') && settings.dashboardWidgets?.includes('stats') || !hasPermission('dashboard.customize');
+  const showCharts = hasPermission('dashboard.customize') && settings.dashboardWidgets?.includes('charts') || !hasPermission('dashboard.customize');
+  const showAlerts = hasPermission('dashboard.customize') && settings.dashboardWidgets?.includes('alerts') || !hasPermission('dashboard.customize');
 
   const totalProducts = products.length;
   const lowStockItems = products.filter(p => p.quantity <= p.lowStockThreshold && p.quantity > 0);
@@ -66,6 +82,9 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-gradient">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Overview of your store operations</p>
       </div>
+
+      {/* Server Status - Desktop App Only (shows IP for web access) */}
+      <ServerStatus />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">

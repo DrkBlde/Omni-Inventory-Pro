@@ -1,7 +1,9 @@
 {
   "name": "omni-inventory-pro-v2",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
+  "description": "Professional Inventory Management System",
+  "author": "DrkBlde",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,10 +12,25 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "electron:dev": "concurrently \"npm run dev\" \"electron .\"",
-    "dist": "npm run build && electron-builder --win"
+    "dist": "npm run build && electron-builder --win",
+    "server": "node server/index.cjs",
+    "server:dev": "tsx server/index.ts",
+    "db:init": "node server/init-db.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev --name init",
+    "db:studio": "prisma studio",
+    "db:reset": "node server/reset-db.js",
+    "service:install": "node server/windows-service.js install",
+    "service:start": "node server/windows-service.js start",
+    "service:stop": "node server/windows-service.js stop",
+    "service:remove": "node server/windows-service.js remove",
+    "autostart:install": "node server/auto-start.js install",
+    "autostart:remove": "node server/auto-start.js remove"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -53,8 +70,12 @@
     "embla-carousel-react": "^8.6.0",
     "express": "^4.18.2",
     "input-otp": "^1.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "prisma": "^5.22.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -66,6 +87,7 @@
     "sqlite3": "^6.0.1",
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.7.0",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
     "zustand": "^4.4.1"
@@ -77,13 +99,13 @@
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.1",
-    "electron": "^41.3.0",
+    "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "eslint": "^8.56.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.3.3",
-    "vite": "^8.0.10",
+    "vite": "^8.0.8",
     "vite-plugin-electron": "^0.15.4"
   },
   "build": {
@@ -100,23 +122,33 @@
       "icon": "public/icon.ico"
     },
     "msi": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": true,
       "runAfterFinish": true,
-      "shortcutName": "Omni Inventory Pro"
+      "shortcutName": "Omni Inventory Pro",
+      "warningsAsErrors": false
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
       "server/**/*",
       "package.json",
-      "node_modules/**/*"
+      "!node_modules/**"
     ],
     "extraResources": [
-      "./server/**",
-      "./electron/icon.ico"
+      {
+        "from": "server",
+        "to": "server"
+      },
+      {
+        "from": "prisma",
+        "to": "prisma",
+        "filter": ["dev.db", "schema.prisma"]
+      },
+      {
+        "from": "node_modules",
+        "to": "node_modules"
+      }
     ]
-  },
-  "author": "DrkBlde",
-  "description": "A full-featured offline-first desktop inventory management system for small businesses."
+  }
 }

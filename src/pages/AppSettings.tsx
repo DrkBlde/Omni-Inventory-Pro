@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useSettingsStore } from "@/lib/SettingsStore"; // Switched to the new dedicated store
+import { useSettingsStore } from "@/lib/settingsStore";
+import { useAppStore } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 import { 
   Store, 
   Save, 
@@ -16,8 +18,8 @@ import {
 } from "lucide-react";
 
 const AppSettings = () => {
-  // Now pulling from the isolated settings database
   const { settings, updateSettings } = useSettingsStore();
+  const { refreshFromServer } = useAppStore();
   const { toast } = useToast();
 
   const [form, setForm] = useState<any>(null);
@@ -61,15 +63,47 @@ const AppSettings = () => {
     }
   };
 
-  const handleFactoryReset = () => {
-    // This clears BOTH databases (Main and Settings)
-    localStorage.clear();
-    toast({ 
-      title: "Full System Wipe", 
-      description: "All products, bills, and settings have been deleted.",
-      variant: "destructive" 
-    });
-    setTimeout(() => window.location.reload(), 1000);
+  const handleFactoryReset = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      const parsedToken = token ? JSON.parse(token) : null;
+
+      if (!parsedToken) {
+        throw new Error('Please login first');
+      }
+
+      // Call server to reset database
+      const response = await fetch('http://localhost:3001/api/admin/reset-db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${parsedToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Reset failed');
+      }
+
+      // Clear localStorage
+      localStorage.clear();
+
+      toast({
+        title: "Database Reset Complete",
+        description: "All data has been cleared. Reloading...",
+      });
+
+      // Reload page (will re-login and fetch fresh data from server)
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      toast({
+        title: "Error Resetting Database",
+        description: err.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Hydration Guard
@@ -188,8 +222,6 @@ const AppSettings = () => {
           </div>
         </div>
       </GlassCard>
-
-
 
       {/* Danger Zone */}
       <GlassCard className="border-red-500/20 bg-red-500/5">

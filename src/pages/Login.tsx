@@ -13,18 +13,18 @@ const Login = () => {
   const login = useAppStore(s => s.login);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!username.trim() || !password.trim()) {
       setError("Please enter both username and password");
       return;
     }
-    const success = login(username.trim(), password);
+    const success = await login(username.trim(), password);
     if (success) {
       navigate("/dashboard");
     } else {
-      setError("Invalid credentials or account deactivated");
+      setError("Invalid credentials, account deactivated, or server unavailable");
     }
   };
 

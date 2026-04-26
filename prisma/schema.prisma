@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  username     String      @unique
+  passwordHash String
+  fullName     String
+  role         String
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  bills        Bill[]      @relation("createdBy")
+  cancelledBills Bill[]    @relation("cancelledBy")
+  clockEntries ClockEntry[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions String   // JSON array of permission strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  name              String
+  sku               String   @unique
+  barcode           String   @unique
+  category          String
+  price             Float
+  costPrice         Float
+  lowStockThreshold Int      @default(10)
+  veryLowStockThreshold Int  @default(5)
+  unit              String   @default("unit")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  batches           Batch[]
+  billItems         BillItem[]
+}
+
+model Batch {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  batchNo    String
+  mfgDate    String
+  expiryDate String
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  bills      Bill[]
+}
+
+model Bill {
+  id              String   @id @default(cuid())
+  billNumber      Int      @unique @default(1001)
+  total           Float
+  taxableAmount   Float    @default(0)
+  totalGst        Float    @default(0)
+  gstPercentage   Float    @default(0)
+  gstNumber       String
+  storeName       String
+  storeAddress    String
+  storePhone      String
+  billType        String   @default("Normal") // "GST" or "Normal"
+  isCancelled     Boolean  @default(false)
+  cancelledBy     String?
+  cancelledAt     DateTime?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  payments        String   @default("[]") // JSON array of payment objects
+
+  creator         User     @relation("createdBy", fields: [createdBy], references: [id])
+  canceller       User?    @relation("cancelledBy", fields: [cancelledBy], references: [id])
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  customerId      String?
+  items           BillItem[]
+}
+
+model BillItem {
+  id        String  @id @default(cuid())
+  billId    String
+  bill      Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  price     Float
+  quantity  Int
+  batchNo   String?
+
+  @@index([billId])
+}
+
+model ClockEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  clockIn  DateTime @default(now())
+  clockOut DateTime?
+
+  @@index([userId])
+}
+
+model Settings {
+  id                     String   @id @default(cuid())
+  key                    String   @unique
+  value                  String   // JSON string for complex values
+  updatedAt              DateTime @updatedAt
+}

@@ -42,9 +42,10 @@
 
     --radius: 0.75rem;
 
-    --glass-bg: 0 0% 100% / 0.05;
-    --glass-border: 0 0% 100% / 0.1;
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    /* Increased opacity for better readability and to prevent overlap */
+    --glass-bg: 0 0% 6% / 0.85; 
+    --glass-border: 0 0% 100% / 0.12;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 
     --sidebar-background: 0 0% 6%;
     --sidebar-foreground: 0 0% 85%;
@@ -69,7 +70,8 @@
 
 @layer utilities {
   .glass {
-    background: hsla(var(--glass-bg));
+    /* Using hsla with higher opacity to ensure content behind is blocked */
+    background: hsla(0, 0%, 6%, 0.85); 
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid hsla(var(--glass-border));
@@ -83,11 +85,13 @@
     border: 1px solid hsla(0, 0%, 100%, 0.06);
   }
 
+  /* This is the class used in your Dialogs/Popups */
   .glass-strong {
-    background: hsla(0, 0%, 100%, 0.08);
+    /* Increased to 0.95 opacity so you cannot see text through it */
+    background: hsla(0, 0%, 5%, 0.95); 
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border: 1px solid hsla(0, 0%, 100%, 0.12);
+    border: 1px solid hsla(0, 0%, 100%, 0.15);
     box-shadow: var(--glass-shadow);
   }
 

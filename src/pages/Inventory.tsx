@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore, Product, Batch } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { StatusBadge, getStockStatus } from "@/components/StatusBadge";
@@ -21,18 +21,24 @@ const emptyForm = {
 
 const Inventory = () => {
   // Added hasPermission to the store destructuring
-  const { products, addProduct, updateProduct, deleteProduct, settings, hasPermission } = useAppStore();
+  const { products, addProduct, updateProduct, deleteProduct, deleteBatch, settings, hasPermission, refreshFromServer } = useAppStore();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [skuOpen, setSkuOpen] = useState(false); 
   const [editId, setEditId] = useState<string | null>(null);
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [confirmDeleteBatch, setConfirmDeleteBatch] = useState<{productId: string, batchId: string} | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const currencySymbol = settings?.currency || '₹';
+
+  // Refresh data from server on mount
+  useEffect(() => {
+    refreshFromServer();
+  }, []);
 
   const getTotalStock = (batches: Batch[] = []) => 
     (batches ?? []).reduce((sum, b) => sum + (Number(b.quantity) || 0), 0);
@@ -76,7 +82,7 @@ const Inventory = () => {
     toast({ title: "Product Data Imported", description: `Loaded details for ${product.sku}` });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.sku.trim()) {
       toast({ title: "Error", description: "SKU is required", variant: "destructive" });
       return;
@@ -84,48 +90,52 @@ const Inventory = () => {
 
     const existingProduct = products.find(p => p.sku === form.sku);
 
-    if (editId) {
-      const currentProduct = products.find(p => p.id === editId);
-      if (!currentProduct) return;
+    try {
+      if (editId) {
+        const currentProduct = products.find(p => p.id === editId);
+        if (!currentProduct) return;
 
-      let updatedBatches = [...(currentProduct.batches || [])];
+        let updatedBatches = [...(currentProduct.batches || [])];
 
-      if (editingBatchId) {
-        updatedBatches = updatedBatches.map(b => 
-          b.id === editingBatchId 
-            ? { ...b, batchNo: form.batchNo, quantity: form.quantity, mfgDate: form.mfgDate, expiryDate: form.expiryDate }
-            : b
-        );
+        if (editingBatchId) {
+          updatedBatches = updatedBatches.map(b =>
+            b.id === editingBatchId
+              ? { ...b, batchNo: form.batchNo, quantity: form.quantity, mfgDate: form.mfgDate, expiryDate: form.expiryDate }
+              : b
+          );
+        }
+
+        await updateProduct(editId, { ...form, batches: updatedBatches } as any);
+        toast({ title: "Updated Successfully" });
+      } else if (existingProduct) {
+        const newBatch: Batch = {
+          id: Math.random().toString(36).substr(2, 9),
+          batchNo: form.batchNo || "DEFAULT",
+          mfgDate: form.mfgDate,
+          expiryDate: form.expiryDate,
+          quantity: Number(form.quantity) || 0
+        };
+        await updateProduct(existingProduct.id, {
+          ...existingProduct,
+          batches: [...(existingProduct.batches ?? []), newBatch]
+        });
+        toast({ title: "New Batch Added" });
+      } else {
+        const newBatch: Batch = {
+          id: Math.random().toString(36).substr(2, 9),
+          batchNo: form.batchNo || "DEFAULT",
+          mfgDate: form.mfgDate,
+          expiryDate: form.expiryDate,
+          quantity: Number(form.quantity) || 0
+        };
+        await addProduct({ ...form, batches: [newBatch] } as any);
+        toast({ title: "Product Created" });
       }
 
-      updateProduct(editId, { ...form, batches: updatedBatches } as any);
-      toast({ title: "Updated Successfully" });
-    } else if (existingProduct) {
-      const newBatch: Batch = {
-        id: Math.random().toString(36).substr(2, 9),
-        batchNo: form.batchNo || "DEFAULT",
-        mfgDate: form.mfgDate,
-        expiryDate: form.expiryDate,
-        quantity: Number(form.quantity) || 0
-      };
-      updateProduct(existingProduct.id, {
-        ...existingProduct,
-        batches: [...(existingProduct.batches ?? []), newBatch]
-      });
-      toast({ title: "New Batch Added" });
-    } else {
-      const newBatch: Batch = {
-        id: Math.random().toString(36).substr(2, 9),
-        batchNo: form.batchNo || "DEFAULT",
-        mfgDate: form.mfgDate,
-        expiryDate: form.expiryDate,
-        quantity: Number(form.quantity) || 0
-      };
-      addProduct({ ...form, batches: [newBatch] } as any);
-      toast({ title: "Product Created" });
+      closeDialog();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-    
-    closeDialog();
   };
 
   return (
@@ -225,6 +235,52 @@ const Inventory = () => {
                               }}>
                                 <Edit className="w-3 h-3" />
                               </Button>
+                            </TableCell>
+                          )}
+
+                          {/* DELETE BATCH GUARD */}
+                          {hasPermission('inventory.delete_batch') && (
+                            <TableCell className="py-2 text-right">
+                              {confirmDeleteBatch?.productId === p.id && confirmDeleteBatch?.batchId === b.id ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <span className="text-[10px] text-destructive font-semibold">Delete?</span>
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="h-5 w-5"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteBatch(p.id, b.id);
+                                      setConfirmDeleteBatch(null);
+                                    }}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmDeleteBatch(null);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmDeleteBatch({ productId: p.id, batchId: b.id });
+                                  }}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
                             </TableCell>
                           )}
                         </TableRow>

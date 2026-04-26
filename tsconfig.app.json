@@ -22,10 +22,6 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
-    /* Silence baseUrl deprecation warning in TS 7.0 */
-    "ignoreDeprecations": "6.0",
-
-    "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"]
     }

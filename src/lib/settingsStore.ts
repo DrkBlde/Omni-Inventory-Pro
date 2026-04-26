@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api } from './api';
 
 export interface AppSettings {
   storeName: string;
@@ -11,33 +12,62 @@ export interface AppSettings {
   defaultBillType: 'GST' | 'Normal';
   gstPercentage: number;
   useFullDate: boolean;
+  enableExpiryBlocking: boolean;
+  dashboardWidgets: string[];
 }
 
 interface SettingsState {
   settings: AppSettings;
-  updateSettings: (data: Partial<AppSettings>) => void;
+  updateSettings: (data: Partial<AppSettings>) => Promise<void>;
   resetSettings: () => void;
+  refreshFromServer: () => Promise<void>;
+  isOnline: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  storeName: 'My Store',
+  storeName: 'Omni Inventory Pro',
   storeAddress: '',
   storePhone: '',
   currency: '₹',
   gstNumber: '',
   storeLogo: '',
-  defaultBillType: 'GST',
-  gstPercentage: 18,
+  defaultBillType: 'Normal',
+  gstPercentage: 0,
   useFullDate: false,
+  enableExpiryBlocking: true,
+  dashboardWidgets: ['stats', 'charts', 'alerts'],
 };
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       settings: DEFAULT_SETTINGS,
-      updateSettings: (data) => set((state) => ({
-        settings: { ...state.settings, ...data }
-      })),
+      isOnline: false,
+
+      refreshFromServer: async () => {
+        try {
+          const serverSettings = await api.settings.getAll();
+          set({
+            settings: { ...DEFAULT_SETTINGS, ...serverSettings },
+            isOnline: true,
+          });
+        } catch (err) {
+          set({ isOnline: false });
+        }
+      },
+
+      updateSettings: async (data) => {
+        try {
+          const updated = await api.settings.update(data);
+          set({ settings: { ...get().settings, ...updated }, isOnline: true });
+        } catch (err) {
+          // Fallback to local update
+          set((state) => ({
+            settings: { ...state.settings, ...data }
+          }));
+        }
+      },
+
       resetSettings: () => set({ settings: DEFAULT_SETTINGS }),
     }),
     {
