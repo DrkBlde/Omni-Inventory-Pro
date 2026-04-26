@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app_icon.png" alt="Omni Inventory Pro" width="120"/>
+  <img src="app_icon.png" alt="Omni Inventory Pro" width="350"/>
 </p>
 
 <h1 align="center">Omni Inventory Pro</h1>
@@ -99,7 +99,18 @@ The backend Express server is started automatically by Electron on launch via `a
 
 ### Running the Installed App
 
-If you downloaded the `.msi` installer, run it and follow the on-screen steps. The app will be installed system-wide and a desktop shortcut will be created automatically.
+If you downloaded the `.msi` installer, run it and follow the on-screen steps. The app will be installed system-wide and a shortcut will be created automatically.
+
+### Default Login Credentials
+
+When you first launch the app, use these credentials to log in:
+
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Password | `admin123` |
+
+> **Important:** Change the admin password immediately after your first login via the Users & Roles page.
 
 ### Running from Source
 
@@ -109,16 +120,39 @@ If you downloaded the `.msi` installer, run it and follow the on-screen steps. T
    ```bash
    npm install
    ```
-4. Set up the database:
-   ```bash
-   npm run db:generate
-   npm run db:push
-   npm run db:init
-   ```
-5. Run the app in development mode:
+4. Run the app in development mode:
    ```bash
    npm run electron:dev
    ```
+
+### Migrating Data from V1
+
+If you were using **Omni Inventory Pro V1** (the Python version) and want to bring your existing products, bills, and settings into V2, use the included migration tool.
+
+**What gets migrated:**
+- All products (including batch number, MFG date, and expiry date)
+- All bills and their items
+- Stock threshold settings (low stock and very low stock levels)
+
+**What does NOT migrate:**
+- The admin user and roles — these are kept from V2
+- Attendance records — V1 did not have this feature
+
+**Before you start:**
+1. Make sure **Omni Inventory Pro V2 is already installed** and has been launched at least once — this creates the V2 database
+2. Make sure **Python 3.10+** is installed on your PC
+3. The migration tool automatically backs up your V2 database before making any changes, so your data is safe
+
+**Steps:**
+1. Copy `migrate_v1_to_v2.bat` into the same folder as your V1 `inventory.db` file
+2. Double-click `migrate_v1_to_v2.bat` to run it
+3. The tool will automatically find your V2 installation. If it can't find it, it will ask you to enter the path manually
+4. Type `YES` when prompted to confirm
+5. Wait for the migration to complete — it will show a summary of how many products and bills were migrated
+6. Launch V2 and verify your data
+
+> **Note:** If anything goes wrong, your original V2 database was backed up automatically before the migration started. The backup file will be in the same folder as the V2 database with a timestamp in the filename.
+
 
 ### Compiling the App
 
