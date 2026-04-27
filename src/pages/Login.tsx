@@ -14,19 +14,24 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
+  if (e) {
     e.preventDefault();
-    setError("");
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter both username and password");
-      return;
-    }
-    const success = await login(username.trim(), password);
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError("Invalid credentials, account deactivated, or server unavailable");
-    }
-  };
+    e.stopPropagation(); // Stops the event from bubbling up
+  }
+
+  setError("");
+
+  try {
+
+    await login(username.trim(), password);
+    
+
+    navigate("/dashboard");
+  } catch (err: any) {
+    console.error("Login Error:", err);
+    setError(err.message || "Connection to server failed");
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">

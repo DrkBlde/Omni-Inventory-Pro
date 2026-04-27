@@ -1,9 +1,9 @@
 {
-  "name": "omni-inventory-pro-v2",
+  "name": "omni-inventory-pro",
   "private": true,
-  "version": "2.1.0",
-  "description": "Professional Inventory Management System",
-  "author": "DrkBlde",
+  "version": "2.2.0",
+  "description": "Simple Yet Powerful Inventory Management System",
+  "author": "Omni Dev Team",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -19,6 +19,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev --name init",
+    "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "node server/reset-db.js",
     "service:install": "node server/windows-service.js install",
@@ -28,9 +29,12 @@
     "autostart:install": "node server/auto-start.js install",
     "autostart:remove": "node server/auto-start.js remove"
   },
+  "prisma": {
+    "seed": "node server/seed.cjs"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "6.19.3",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -59,11 +63,14 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@tanstack/react-query": "^5.83.0",
+    "@types/crypto-js": "^4.2.2",
+    "axios": "^1.15.1",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.3.1",
     "electron-is-dev": "^3.0.1",
@@ -74,7 +81,6 @@
     "jsqr": "^1.4.0",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
-    "prisma": "^5.22.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -90,7 +96,8 @@
     "tsx": "^4.7.0",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
-    "zustand": "^4.4.1"
+    "zustand": "^4.4.1",
+    "mime": "1.6.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -103,14 +110,16 @@
     "electron-builder": "^26.8.1",
     "eslint": "^8.56.0",
     "postcss": "^8.5.6",
+    "prisma": "6.19.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.3.3",
     "vite": "^8.0.8",
     "vite-plugin-electron": "^0.15.4"
   },
   "build": {
-    "appId": "com.omni.inventorypro",
+    "appId": "com.omni.inventory.pro",
     "productName": "Omni Inventory Pro",
+    "buildVersion": "2.2.0.0",
     "asar": true,
     "directories": {
       "output": "dist_msi"
@@ -131,23 +140,368 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "server/**/*",
-      "package.json",
-      "!node_modules/**"
+      "package.json"
     ],
     "extraResources": [
       {
-        "from": "server",
+        "from": "./server",
         "to": "server"
       },
       {
-        "from": "prisma",
-        "to": "prisma",
-        "filter": ["dev.db", "schema.prisma"]
+        "from": "./prisma",
+        "to": "prisma"
       },
       {
-        "from": "node_modules",
-        "to": "node_modules"
+        "from": "./node_modules/accepts",
+        "to": "node_modules/accepts"
+      },
+      {
+        "from": "./node_modules/array-flatten",
+        "to": "node_modules/array-flatten"
+      },
+      {
+        "from": "./node_modules/bcryptjs",
+        "to": "node_modules/bcryptjs"
+      },
+      {
+        "from": "./node_modules/body-parser",
+        "to": "node_modules/body-parser"
+      },
+      {
+        "from": "./node_modules/buffer-equal-constant-time",
+        "to": "node_modules/buffer-equal-constant-time"
+      },
+      {
+        "from": "./node_modules/bytes",
+        "to": "node_modules/bytes"
+      },
+      {
+        "from": "./node_modules/call-bind-apply-helpers",
+        "to": "node_modules/call-bind-apply-helpers"
+      },
+      {
+        "from": "./node_modules/call-bound",
+        "to": "node_modules/call-bound"
+      },
+      {
+        "from": "./node_modules/content-disposition",
+        "to": "node_modules/content-disposition"
+      },
+      {
+        "from": "./node_modules/content-type",
+        "to": "node_modules/content-type"
+      },
+      {
+        "from": "./node_modules/cookie",
+        "to": "node_modules/cookie"
+      },
+      {
+        "from": "./node_modules/cookie-signature",
+        "to": "node_modules/cookie-signature"
+      },
+      {
+        "from": "./node_modules/cors",
+        "to": "node_modules/cors"
+      },
+      {
+        "from": "./node_modules/debug",
+        "to": "node_modules/debug"
+      },
+      {
+        "from": "./node_modules/depd",
+        "to": "node_modules/depd"
+      },
+      {
+        "from": "./node_modules/destroy",
+        "to": "node_modules/destroy"
+      },
+      {
+        "from": "./node_modules/dotenv",
+        "to": "node_modules/dotenv"
+      },
+      {
+        "from": "./node_modules/dunder-proto",
+        "to": "node_modules/dunder-proto"
+      },
+      {
+        "from": "./node_modules/ecdsa-sig-formatter",
+        "to": "node_modules/ecdsa-sig-formatter"
+      },
+      {
+        "from": "./node_modules/ee-first",
+        "to": "node_modules/ee-first"
+      },
+      {
+        "from": "./node_modules/encodeurl",
+        "to": "node_modules/encodeurl"
+      },
+      {
+        "from": "./node_modules/es-define-property",
+        "to": "node_modules/es-define-property"
+      },
+      {
+        "from": "./node_modules/es-errors",
+        "to": "node_modules/es-errors"
+      },
+      {
+        "from": "./node_modules/es-object-atoms",
+        "to": "node_modules/es-object-atoms"
+      },
+      {
+        "from": "./node_modules/escape-html",
+        "to": "node_modules/escape-html"
+      },
+      {
+        "from": "./node_modules/etag",
+        "to": "node_modules/etag"
+      },
+      {
+        "from": "./node_modules/express",
+        "to": "node_modules/express"
+      },
+      {
+        "from": "./node_modules/finalhandler",
+        "to": "node_modules/finalhandler"
+      },
+      {
+        "from": "./node_modules/forwarded",
+        "to": "node_modules/forwarded"
+      },
+      {
+        "from": "./node_modules/fresh",
+        "to": "node_modules/fresh"
+      },
+      {
+        "from": "./node_modules/function-bind",
+        "to": "node_modules/function-bind"
+      },
+      {
+        "from": "./node_modules/get-intrinsic",
+        "to": "node_modules/get-intrinsic"
+      },
+      {
+        "from": "./node_modules/get-proto",
+        "to": "node_modules/get-proto"
+      },
+      {
+        "from": "./node_modules/gopd",
+        "to": "node_modules/gopd"
+      },
+      {
+        "from": "./node_modules/has-symbols",
+        "to": "node_modules/has-symbols"
+      },
+      {
+        "from": "./node_modules/hasown",
+        "to": "node_modules/hasown"
+      },
+      {
+        "from": "./node_modules/http-errors",
+        "to": "node_modules/http-errors"
+      },
+      {
+        "from": "./node_modules/iconv-lite",
+        "to": "node_modules/iconv-lite"
+      },
+      {
+        "from": "./node_modules/inherits",
+        "to": "node_modules/inherits"
+      },
+      {
+        "from": "./node_modules/ipaddr.js",
+        "to": "node_modules/ipaddr.js"
+      },
+      {
+        "from": "./node_modules/jsonwebtoken",
+        "to": "node_modules/jsonwebtoken"
+      },
+      {
+        "from": "./node_modules/jwa",
+        "to": "node_modules/jwa"
+      },
+      {
+        "from": "./node_modules/jws",
+        "to": "node_modules/jws"
+      },
+      {
+        "from": "./node_modules/lodash.includes",
+        "to": "node_modules/lodash.includes"
+      },
+      {
+        "from": "./node_modules/lodash.isboolean",
+        "to": "node_modules/lodash.isboolean"
+      },
+      {
+        "from": "./node_modules/lodash.isinteger",
+        "to": "node_modules/lodash.isinteger"
+      },
+      {
+        "from": "./node_modules/lodash.isnumber",
+        "to": "node_modules/lodash.isnumber"
+      },
+      {
+        "from": "./node_modules/lodash.isplainobject",
+        "to": "node_modules/lodash.isplainobject"
+      },
+      {
+        "from": "./node_modules/lodash.isstring",
+        "to": "node_modules/lodash.isstring"
+      },
+      {
+        "from": "./node_modules/lodash.once",
+        "to": "node_modules/lodash.once"
+      },
+      {
+        "from": "./node_modules/math-intrinsics",
+        "to": "node_modules/math-intrinsics"
+      },
+      {
+        "from": "./node_modules/media-typer",
+        "to": "node_modules/media-typer"
+      },
+      {
+        "from": "./node_modules/merge-descriptors",
+        "to": "node_modules/merge-descriptors"
+      },
+      {
+        "from": "./node_modules/methods",
+        "to": "node_modules/methods"
+      },
+      {
+        "from": "./node_modules/mime-db",
+        "to": "node_modules/mime-db"
+      },
+      {
+        "from": "./node_modules/mime-types",
+        "to": "node_modules/mime-types"
+      },
+      {
+        "from": "./node_modules/ms",
+        "to": "node_modules/ms"
+      },
+      {
+        "from": "./node_modules/negotiator",
+        "to": "node_modules/negotiator"
+      },
+      {
+        "from": "./node_modules/object-assign",
+        "to": "node_modules/object-assign"
+      },
+      {
+        "from": "./node_modules/object-inspect",
+        "to": "node_modules/object-inspect"
+      },
+      {
+        "from": "./node_modules/on-finished",
+        "to": "node_modules/on-finished"
+      },
+      {
+        "from": "./node_modules/parseurl",
+        "to": "node_modules/parseurl"
+      },
+      {
+        "from": "./node_modules/path-to-regexp",
+        "to": "node_modules/path-to-regexp"
+      },
+      {
+        "from": "./node_modules/proxy-addr",
+        "to": "node_modules/proxy-addr"
+      },
+      {
+        "from": "./node_modules/qs",
+        "to": "node_modules/qs"
+      },
+      {
+        "from": "./node_modules/range-parser",
+        "to": "node_modules/range-parser"
+      },
+      {
+        "from": "./node_modules/raw-body",
+        "to": "node_modules/raw-body"
+      },
+      {
+        "from": "./node_modules/safe-buffer",
+        "to": "node_modules/safe-buffer"
+      },
+      {
+        "from": "./node_modules/safer-buffer",
+        "to": "node_modules/safer-buffer"
+      },
+      {
+        "from": "./node_modules/semver",
+        "to": "node_modules/semver"
+      },
+      {
+        "from": "./node_modules/send",
+        "to": "node_modules/send"
+      },
+      {
+        "from": "./node_modules/send/node_modules",
+        "to": "node_modules/send/node_modules"
+      },
+      {
+        "from": "./node_modules/serve-static",
+        "to": "node_modules/serve-static"
+      },
+      {
+        "from": "./node_modules/setprototypeof",
+        "to": "node_modules/setprototypeof"
+      },
+      {
+        "from": "./node_modules/side-channel",
+        "to": "node_modules/side-channel"
+      },
+      {
+        "from": "./node_modules/side-channel-list",
+        "to": "node_modules/side-channel-list"
+      },
+      {
+        "from": "./node_modules/side-channel-map",
+        "to": "node_modules/side-channel-map"
+      },
+      {
+        "from": "./node_modules/side-channel-weakmap",
+        "to": "node_modules/side-channel-weakmap"
+      },
+      {
+        "from": "./node_modules/statuses",
+        "to": "node_modules/statuses"
+      },
+      {
+        "from": "./node_modules/toidentifier",
+        "to": "node_modules/toidentifier"
+      },
+      {
+        "from": "./node_modules/type-is",
+        "to": "node_modules/type-is"
+      },
+      {
+        "from": "./node_modules/unpipe",
+        "to": "node_modules/unpipe"
+      },
+      {
+        "from": "./node_modules/utils-merge",
+        "to": "node_modules/utils-merge"
+      },
+      {
+        "from": "./node_modules/vary",
+        "to": "node_modules/vary"
+      },
+      {
+        "from": "./node_modules/@prisma",
+        "to": "node_modules/@prisma"
+      },
+      {
+        "from": "./node_modules/.prisma",
+        "to": "node_modules/.prisma"
+      },
+      {
+        "from": "./node_modules/prisma",
+        "to": "node_modules/prisma"
+      },
+      {
+        "from": "./node_modules/express",
+        "to": "node_modules/express"
       }
     ]
   }

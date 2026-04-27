@@ -2,7 +2,7 @@
 const ENCRYPTION_KEY = 'omni-inventory-pro-v2-encrypt32!'; // Exactly 32 bytes for AES-256
 
 const stringToArrayBuffer = (str: string): ArrayBuffer =>
-  new TextEncoder().encode(str);
+  new TextEncoder().encode(str).buffer as ArrayBuffer;
 
 const arrayBufferToHex = (buffer: ArrayBuffer): string =>
   Array.from(new Uint8Array(buffer))
@@ -289,8 +289,8 @@ function makeQRMatrix(text: string): { matrix: (0|1|null)[][]; size: number } {
   }
 
   // Write format information (ECL=M=01, mask=000, BCH)
-  const formatInfo = [1,1,0,1,0,1,1,1,0,0,1,0,0,0,0]; // ECL M + mask 0, precomputed
-  const fi = formatInfo;
+  const formatInfo: (0|1)[] = [1,1,0,1,0,1,1,1,0,0,1,0,0,0,0]; // ECL M + mask 0, precomputed
+  const fi: (0|1)[] = formatInfo;
   // Around top-left finder
   const fPos = [0,1,2,3,4,5,7,8,8,8,8,8,8,8,8];
   const fCol = [8,8,8,8,8,8,8,8,7,5,4,3,2,1,0];

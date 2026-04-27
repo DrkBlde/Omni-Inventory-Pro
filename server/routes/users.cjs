@@ -1,17 +1,27 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { authenticate } = require('../middleware/auth.cjs');
+const { authenticate, authorize } = require('../middleware/auth.cjs');
 
 module.exports = function userRoutes(prisma) {
   const router = express.Router();
 
-  // GET all users
+  // GET all users (Hides 'admin' from the list)
   router.get('/', authenticate, async (req, res) => {
     try {
       const users = await prisma.user.findMany({
-        orderBy: { createdAt: 'desc' }
+        where: {
+          NOT: {
+            username: 'admin' // This ensures System Admin never shows in the table
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { roleRelation: true } // Including role data for the UI
       });
-      const safeUsers = users.map(({ passwordHash, ...u }) => ({ ...u, isActive: u.isActive ?? true }));
+
+      const safeUsers = users.map(({ passwordHash, ...u }) => ({ 
+        ...u, 
+        isActive: u.isActive ?? true 
+      }));
       res.json(safeUsers);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -22,9 +32,11 @@ module.exports = function userRoutes(prisma) {
   router.get('/:id', authenticate, async (req, res) => {
     try {
       const user = await prisma.user.findUnique({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
+        include: { roleRelation: true }
       });
       if (!user) return res.status(404).json({ error: 'User not found' });
+      
       const { passwordHash, ...safeUser } = user;
       res.json({ ...safeUser, isActive: safeUser.isActive ?? true });
     } catch (err) {
@@ -33,23 +45,36 @@ module.exports = function userRoutes(prisma) {
   });
 
   // POST create user
-  router.post('/', authenticate, async (req, res) => {
+  router.post('/', authenticate, authorize('users.manage'), async (req, res) => {
     try {
-      const { username, password, fullName, role } = req.body;
+      const { username, password, fullName, roleId, role } = req.body;
+      const finalRoleId = roleId || role;
 
-      const existing = await prisma.user.findUnique({ where: { username } });
-      if (existing) return res.status(400).json({ error: 'Username already exists' });
+      if (!username || !password || !finalRoleId) {
+        return res.status(400).json({ error: "Missing required fields: Username, Password, and Role are required." });
+      }
 
       const passwordHash = await bcrypt.hash(password, 10);
 
       const user = await prisma.user.create({
-        data: { username, passwordHash, fullName, role }
+        data: {
+          username,
+          passwordHash,
+          fullName,
+          isActive: true,
+          roleRelation: {
+            connect: { id: finalRoleId }
+          }
+        },
+        include: {
+          roleRelation: true 
+        }
       });
 
-      const { passwordHash: _, ...safeUser } = user;
-      res.status(201).json(safeUser);
-    } catch (err) {
-      res.status(400).json({ error: err.message });
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
   });
 
@@ -57,11 +82,21 @@ module.exports = function userRoutes(prisma) {
   router.put('/:id', authenticate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { fullName, role, isActive } = req.body;
+      const { fullName, roleId, role, isActive } = req.body;
+      const finalRoleId = roleId || role;
 
       const user = await prisma.user.update({
         where: { id },
-        data: { fullName, role, isActive }
+        data: { 
+          fullName, 
+          isActive: isActive !== undefined ? isActive : true,
+          ...(finalRoleId && {
+            roleRelation: {
+              connect: { id: finalRoleId }
+            }
+          })
+        },
+        include: { roleRelation: true }
       });
 
       const { passwordHash, ...safeUser } = user;
@@ -77,6 +112,10 @@ module.exports = function userRoutes(prisma) {
       const { id } = req.params;
       const { newPassword } = req.body;
 
+      if (!newPassword) {
+        return res.status(400).json({ error: 'New password is required' });
+      }
+
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
       await prisma.user.update({
@@ -84,13 +123,13 @@ module.exports = function userRoutes(prisma) {
         data: { passwordHash }
       });
 
-      res.json({ success: true });
+      res.json({ success: true, message: "Password updated successfully" });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   });
 
-  // DELETE user (soft delete - deactivate)
+  // DELETE user (soft delete)
   router.delete('/:id', authenticate, async (req, res) => {
     try {
       await prisma.user.update({

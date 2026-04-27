@@ -10,6 +10,15 @@ const isElectron = () => {
   return navigator.userAgent.toLowerCase().includes('electron');
 };
 
+// Define the shape of the window object to include our custom API
+declare global {
+  interface Window {
+    electronAPI: {
+      getLocalIPs: () => Promise<string[]>;
+    };
+  }
+}
+
 export const ServerStatus = () => {
   const [ips, setIps] = useState<string[]>([]);
   const [isOnline, setIsOnline] = useState(false);
@@ -20,27 +29,20 @@ export const ServerStatus = () => {
     // Only run in Electron desktop app
     if (!isElectron()) return;
 
-    // Get IPs using node integration (since nodeIntegration: true)
-    try {
-      const os = require('os');
-      const interfaces = os.networkInterfaces();
-      const foundIps: string[] = [];
-
-      for (const iface of Object.values(interfaces)) {
-        if (iface) {
-          for (const config of iface) {
-            if (config.family === 'IPv4' && !config.internal) {
-              foundIps.push(config.address);
-            }
-          }
+    // FIX: Instead of using require('os'), call the secure bridge
+    const fetchIps = async () => {
+      try {
+        if (window.electronAPI && window.electronAPI.getLocalIPs) {
+          const foundIps = await window.electronAPI.getLocalIPs();
+          setIps(foundIps.length > 0 ? foundIps : ['127.0.0.1']);
         }
+      } catch (err) {
+        console.error('Failed to get IP addresses via bridge:', err);
+        setIps(['127.0.0.1']);
       }
+    };
 
-      setIps(foundIps.length > 0 ? foundIps : ['127.0.0.1']);
-    } catch (err) {
-      console.error('Failed to get IP addresses:', err);
-      setIps(['127.0.0.1']);
-    }
+    fetchIps();
 
     // Check server connection
     const checkConnection = async () => {
@@ -61,7 +63,6 @@ export const ServerStatus = () => {
     }
   };
 
-  // Only show in desktop app
   if (!isElectron()) {
     return null;
   }

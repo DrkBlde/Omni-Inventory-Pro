@@ -1,65 +1,103 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAppStore, ALL_PERMISSIONS } from "@/lib/store";
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableRow, 
+  TableHead, 
+  TableCell 
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, UserX, Key, Shield, UserCheck } from "lucide-react"; // Added UserCheck icon
+import { Plus, Edit, UserX, Key, Shield, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const UsersRoles = () => {
   const { 
     users, roles, addUser, updateUser, deactivateUser, 
-    activateUser,
-    resetPassword, addRole, updateRole, deleteRole, hasPermission 
+    activateUser, resetPassword, addRole, updateRole, deleteRole, hasPermission 
   } = useAppStore();
   const { toast } = useToast();
 
-  // User form
+  // User form state
   const [userDialog, setUserDialog] = useState(false);
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [userForm, setUserForm] = useState({ username: '', fullName: '', role: 'Cashier', password: '' });
+  const [userForm, setUserForm] = useState({ username: '', fullName: '', role: '', password: '' });
 
-  // Role form
+  // Role form state
   const [roleDialog, setRoleDialog] = useState(false);
   const [editRoleId, setEditRoleId] = useState<string | null>(null);
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] as string[] });
 
-  // Reset password
+  // Reset password state
   const [resetDialog, setResetDialog] = useState(false);
   const [resetUserId, setResetUserId] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  const openAddUser = () => { setEditUserId(null); setUserForm({ username: '', fullName: '', role: 'Cashier', password: '' }); setUserDialog(true); };
-  const openEditUser = (u: typeof users[0]) => {
+  // --- User Actions ---
+  const openAddUser = () => { 
+    setEditUserId(null); 
+    setUserForm({ 
+      username: '', 
+      fullName: '', 
+      role: roles.length > 0 ? roles[0].id : '', 
+      password: '' 
+    }); 
+    setUserDialog(true); 
+  };
+
+  const openEditUser = (u: any) => {
     setEditUserId(u.id);
-    setUserForm({ username: u.username, fullName: u.fullName, role: u.role, password: '' });
+    // Logic to handle both roleId and nested roleRelation during edit
+    const currentRoleId = u.roleId || u.role || (u.roleRelation ? u.roleRelation.id : '');
+    setUserForm({ username: u.username, fullName: u.fullName, role: currentRoleId, password: '' });
     setUserDialog(true);
   };
 
-  const saveUser = () => {
+  const saveUser = async () => {
     if (!userForm.username.trim() || !userForm.fullName.trim()) {
       toast({ title: "Name and username required", variant: "destructive" }); return;
     }
-    if (editUserId) {
-      updateUser(editUserId, { username: userForm.username, fullName: userForm.fullName, role: userForm.role });
-      toast({ title: "User updated" });
-    } else {
-      if (!userForm.password) { toast({ title: "Password required", variant: "destructive" }); return; }
-      addUser({ username: userForm.username, fullName: userForm.fullName, role: userForm.role, isActive: true }, userForm.password);
-      toast({ title: "User created" });
+
+    try {
+      if (editUserId) {
+        await updateUser(editUserId, { 
+          username: userForm.username, 
+          fullName: userForm.fullName, 
+          roleId: userForm.role 
+        });
+        toast({ title: "User updated successfully" });
+      } else {
+        if (!userForm.password) { toast({ title: "Password required", variant: "destructive" }); return; }
+        await addUser({ ...userForm, roleId: userForm.role, isActive: true });
+        toast({ title: "User created successfully" });
+      }
+      setUserDialog(false);
+    } catch (e: any) {
+      toast({ title: "Action failed", description: e.message || "Check server connection", variant: "destructive" });
     }
-    setUserDialog(false);
   };
 
   const openAddRole = () => { setEditRoleId(null); setRoleForm({ name: '', permissions: [] }); setRoleDialog(true); };
-  const openEditRole = (r: typeof roles[0]) => {
+  
+  const openEditRole = (r: any) => {
     setEditRoleId(r.id);
-    setRoleForm({ name: r.name, permissions: [...r.permissions] });
+    setRoleForm({ 
+      name: r.name, 
+      permissions: Array.isArray(r.permissions) ? [...r.permissions] : [] 
+    });
     setRoleDialog(true);
   };
 
@@ -70,49 +108,63 @@ const UsersRoles = () => {
     }));
   };
 
-  const saveRole = () => {
+  const saveRole = async () => {
     if (!roleForm.name.trim()) { toast({ title: "Role name required", variant: "destructive" }); return; }
-    if (editRoleId) {
-      updateRole(editRoleId, roleForm);
-      toast({ title: "Role updated" });
-    } else {
-      addRole(roleForm);
-      toast({ title: "Role created" });
+    try {
+      if (editRoleId) {
+        await updateRole(editRoleId, roleForm);
+        toast({ title: "Role updated" });
+      } else {
+        await addRole(roleForm);
+        toast({ title: "Role created" });
+      }
+      setRoleDialog(false);
+    } catch (e: any) {
+      toast({ title: "Error saving role", variant: "destructive" });
     }
-    setRoleDialog(false);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!newPassword) return;
-    resetPassword(resetUserId, newPassword);
-    toast({ title: "Password reset" });
-    setResetDialog(false);
-    setNewPassword('');
+    try {
+      await resetPassword(resetUserId, newPassword);
+      toast({ title: "Password has been reset" });
+      setResetDialog(false);
+      setNewPassword('');
+    } catch (e: any) {
+      toast({ title: "Reset failed", description: "You might not have permission", variant: "destructive" });
+    }
   };
 
   const permGroups = {
+    'Dashboard': ALL_PERMISSIONS.filter(p => p.startsWith('dashboard')),
     'Inventory': ALL_PERMISSIONS.filter(p => p.startsWith('inventory')),
     'POS': ALL_PERMISSIONS.filter(p => p.startsWith('pos')),
     'Reports': ALL_PERMISSIONS.filter(p => p.startsWith('reports')),
     'Users': ALL_PERMISSIONS.filter(p => p.startsWith('users')),
     'Roles': ALL_PERMISSIONS.filter(p => p.startsWith('roles')),
+    'Attendance': ALL_PERMISSIONS.filter(p => p.startsWith('attendance')),
     'Settings': ALL_PERMISSIONS.filter(p => p.startsWith('settings')),
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold text-gradient">Users & Roles</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gradient">Users & Roles</h1>
+      </div>
 
       <Tabs defaultValue="users">
         <TabsList className="glass-subtle">
           <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
+          {hasPermission('roles.view') && <TabsTrigger value="roles">Roles</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="users" className="mt-4 space-y-4">
           <div className="flex justify-end">
             {hasPermission('users.manage') && (
-              <Button onClick={openAddUser} className="gap-2"><Plus className="w-4 h-4" /> Add User</Button>
+              <Button onClick={openAddUser} className="gap-2">
+                <Plus className="w-4 h-4" /> Add User
+              </Button>
             )}
           </div>
           <GlassCard className="p-0 overflow-hidden">
@@ -131,31 +183,39 @@ const UsersRoles = () => {
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.fullName}</TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">{u.username}</TableCell>
-                    <TableCell><span className="glass-subtle px-2 py-1 rounded text-xs">{u.role}</span></TableCell>
+                    <TableCell>
+                      <span className="glass-subtle px-2 py-1 rounded text-xs">
+                        {/* THE FIX: Lookup priority list */}
+                        {u.roleRelation?.name || 
+                         roles.find(r => r.id === u.roleId || r.id === u.role)?.name || 
+                         u.role || 
+                         'No Role'}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       {u.isActive
-                        ? <span className="text-xs text-success">Active</span>
-                        : <span className="text-xs text-destructive">Deactivated</span>}
+                        ? <span className="text-xs text-success flex items-center gap-1"><UserCheck className="w-3 h-3" /> Active</span>
+                        : <span className="text-xs text-destructive flex items-center gap-1"><UserX className="w-3 h-3" /> Deactivated</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         {hasPermission('users.manage') && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => openEditUser(u)}><Edit className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => { setResetUserId(u.id); setResetDialog(true); }}><Key className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEditUser(u)} className="hover:text-primary">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { setResetUserId(u.id); setResetDialog(true); }} className="hover:text-amber-500">
+                              <Key className="w-4 h-4" />
+                            </Button>
                           </>
                         )}
-
-                        {/* DEACTIVATE LOGIC */}
                         {u.isActive && u.username !== 'admin' && hasPermission('users.manage') && (
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { deactivateUser(u.id); toast({ title: "User deactivated" }); }}>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => deactivateUser(u.id)}>
                             <UserX className="w-4 h-4" />
                           </Button>
                         )}
-
-                        {/* REACTIVATE LOGIC - Admin/Specialized Permission Only */}
-                        {!u.isActive && hasPermission('users.reactivate') && (
-                          <Button variant="ghost" size="icon" className="text-success" onClick={() => { activateUser(u.id); toast({ title: "User reactivated" }); }}>
+                        {!u.isActive && hasPermission('users.manage') && (
+                          <Button variant="ghost" size="icon" className="text-success hover:bg-success/10" onClick={() => activateUser(u.id)}>
                             <UserCheck className="w-4 h-4" />
                           </Button>
                         )}
@@ -170,29 +230,41 @@ const UsersRoles = () => {
 
         <TabsContent value="roles" className="mt-4 space-y-4">
           <div className="flex justify-end">
-            {hasPermission('roles.manage') && (
-              <Button onClick={openAddRole} className="gap-2"><Plus className="w-4 h-4" /> Add Role</Button>
+            {hasPermission('roles.create') && (
+              <Button onClick={openAddRole} className="gap-2">
+                <Plus className="w-4 h-4" /> Add Role
+              </Button>
             )}
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map(r => (
-              <GlassCard key={r.id} className="relative">
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-4 h-4" />
-                  <h3 className="font-semibold">{r.name}</h3>
+              <GlassCard key={r.id} className="relative p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg">{r.name}</h3>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">{r.permissions.length} permissions</p>
-                <div className="flex flex-wrap gap-1">
-                  {r.permissions.slice(0, 6).map(p => (
-                    <span key={p} className="text-[10px] px-1.5 py-0.5 rounded glass-subtle">{p}</span>
+                <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-wider">
+                  {Array.isArray(r.permissions) ? r.permissions.length : 0} Assigned Permissions
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-6">
+                  {Array.isArray(r.permissions) && r.permissions.slice(0, 6).map(p => (
+                    <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-accent/50 border border-white/5">{p}</span>
                   ))}
-                  {r.permissions.length > 6 && <span className="text-[10px] text-muted-foreground">+{r.permissions.length - 6} more</span>}
+                  {Array.isArray(r.permissions) && r.permissions.length > 6 && (
+                    <span className="text-[10px] text-muted-foreground">+{r.permissions.length - 6} more</span>
+                  )}
                 </div>
-                <div className="flex gap-1 mt-3">
+                <div className="flex gap-2 pt-2 border-t border-white/5">
                   {hasPermission('roles.manage') && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => openEditRole(r)}>Edit</Button>
-                      {r.name !== 'Admin' && <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { deleteRole(r.id); toast({ title: "Role deleted" }); }}>Delete</Button>}
+                      <Button variant="secondary" size="sm" className="flex-1" onClick={() => openEditRole(r)}>Edit</Button>
+                      {r.name.toLowerCase() !== 'admin' && (
+                        <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => deleteRole(r.id)}>
+                          Delete
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -205,76 +277,78 @@ const UsersRoles = () => {
       {/* User Dialog */}
       <Dialog open={userDialog} onOpenChange={setUserDialog}>
         <DialogContent className="glass-strong border-border max-w-md">
-          <DialogHeader><DialogTitle>{editUserId ? 'Edit' : 'Add'} User</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2"><Label>Full Name</Label><Input value={userForm.fullName} onChange={e => setUserForm({ ...userForm, fullName: e.target.value })} className="bg-accent/30" /></div>
-            <div className="space-y-2"><Label>Username</Label><Input value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} className="bg-accent/30" /></div>
-            {!editUserId && <div className="space-y-2"><Label>Password</Label><Input type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} className="bg-accent/30" /></div>}
+          <DialogHeader>
+            <DialogTitle>{editUserId ? 'Edit Account' : 'Create New User'}</DialogTitle>
+            <DialogDescription>Fill in the profile details and assign a role.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label>Role</Label>
-              <select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })} className="w-full bg-accent border border-border rounded-md px-3 py-2 text-sm">
-                {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+              <Label>Full Name</Label>
+              <Input value={userForm.fullName} onChange={e => setUserForm({ ...userForm, fullName: e.target.value })} className="bg-background/50" />
+            </div>
+            <div className="space-y-2">
+              <Label>Username</Label>
+              <Input value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} className="bg-background/50" />
+            </div>
+            {!editUserId && (
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} className="bg-background/50" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Assigned Role</Label>
+              <select 
+                value={userForm.role} 
+                onChange={e => setUserForm({ ...userForm, role: e.target.value })} 
+                className="w-full bg-background/50 border border-border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+              >
+                {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
-            <Button onClick={saveUser} className="w-full">{editUserId ? 'Update' : 'Create'} User</Button>
+            <Button onClick={saveUser} className="w-full h-11 mt-2">
+              {editUserId ? 'Update User' : 'Create User'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Role Dialog */}
+      {/* Role Dialog - Complex Height/Scroll Restored */}
       <Dialog open={roleDialog} onOpenChange={setRoleDialog}>
-        <DialogContent className="glass-strong border-border max-w-lg flex flex-col p-0 overflow-hidden max-h-[85vh]">
+        <DialogContent className="glass-strong border-border max-w-lg flex flex-col p-0 overflow-hidden max-h-[90vh]">
           <div className="p-6 pb-2">
             <DialogHeader>
-              <DialogTitle>{editRoleId ? 'Edit' : 'Create'} Role</DialogTitle>
+              <DialogTitle>{editRoleId ? 'Modify Role' : 'Define New Role'}</DialogTitle>
+              <DialogDescription>Configure permissions and access levels.</DialogDescription>
             </DialogHeader>
-            <div className="mt-4 space-y-2">
+            <div className="mt-6 space-y-2">
               <Label>Role Name</Label>
-              <Input 
-                value={roleForm.name} 
-                onChange={e => setRoleForm({ ...roleForm, name: e.target.value })} 
-                className="bg-accent/30" 
-              />
+              <Input value={roleForm.name} onChange={e => setRoleForm({ ...roleForm, name: e.target.value })} className="bg-background/50" />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
-            <Label className="text-xs font-bold uppercase text-muted-foreground">Permissions</Label>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 custom-scrollbar">
             {Object.entries(permGroups).map(([group, perms]) => (
-              <div key={group} className="glass-subtle rounded-lg p-3 border border-white/5">
-                <p className="text-[11px] font-bold text-primary/80 mb-3 underline underline-offset-4">{group}</p>
-                <div className="grid grid-cols-1 gap-3">
-                  {perms.map(p => (
-                    <div 
-                      key={p} 
-                      className="flex items-center space-x-3 group cursor-pointer"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        togglePerm(p);
-                      }}
-                    >
-                      <Checkbox 
-                        id={p}
-                        checked={roleForm.permissions.includes(p)} 
-                        onCheckedChange={() => togglePerm(p)} 
-                      />
-                      <label 
-                        htmlFor={p}
-                        className="text-sm font-mono cursor-pointer group-hover:text-primary transition-colors"
-                      >
-                        {p}
-                      </label>
-                    </div>
-                  ))}
+              perms.length > 0 && (
+                <div key={group} className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/5">
+                  <h4 className="text-[11px] font-bold uppercase text-primary/70 tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" /> {group}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {perms.map(p => (
+                      <div key={p} className="flex items-center space-x-3 group cursor-pointer" onClick={() => togglePerm(p)}>
+                        <Checkbox id={p} checked={roleForm.permissions.includes(p)} onCheckedChange={() => togglePerm(p)} />
+                        <label htmlFor={p} className="text-sm font-mono cursor-pointer group-hover:text-primary transition-colors">{p}</label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             ))}
           </div>
-
-          <div className="p-6 pt-2 bg-background/40 backdrop-blur-sm border-t border-white/5">
-            <Button onClick={saveRole} className="w-full h-11">
-              {editRoleId ? 'Update Role' : 'Create Role'}
-            </Button>
+          
+          <div className="p-6 bg-background/40 backdrop-blur-md border-t border-white/10">
+            <Button onClick={saveRole} className="w-full h-11">Save Role Configuration</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -282,10 +356,16 @@ const UsersRoles = () => {
       {/* Reset Password Dialog */}
       <Dialog open={resetDialog} onOpenChange={setResetDialog}>
         <DialogContent className="glass-strong border-border max-w-sm">
-          <DialogHeader><DialogTitle>Reset Password</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2"><Label>New Password</Label><Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-accent/30" /></div>
-            <Button onClick={handleReset} className="w-full">Reset Password</Button>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>Assign a new secure password for this user.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-background/50" />
+            </div>
+            <Button onClick={handleReset} className="w-full h-11">Update Password</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api } from './api';
 
+const API_URL = 'http://localhost:3001/api';
+
 export interface AppSettings {
   storeName: string;
   storeAddress: string;
@@ -14,6 +16,7 @@ export interface AppSettings {
   useFullDate: boolean;
   enableExpiryBlocking: boolean;
   dashboardWidgets: string[];
+  inactivityTimeout: number; // minutes, 0 = disabled
 }
 
 interface SettingsState {
@@ -36,6 +39,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   useFullDate: false,
   enableExpiryBlocking: true,
   dashboardWidgets: ['stats', 'charts', 'alerts'],
+  inactivityTimeout: 10,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -56,15 +60,37 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
-      updateSettings: async (data) => {
+      updateSettings: async (newSettings) => {
         try {
-          const updated = await api.settings.update(data);
-          set({ settings: { ...get().settings, ...updated }, isOnline: true });
-        } catch (err) {
-          // Fallback to local update
-          set((state) => ({
-            settings: { ...state.settings, ...data }
+          const token = localStorage.getItem('omni_token');
+          
+          // Merge current state with new changes to ensure ID and all fields exist
+          const currentSettings = get().settings;
+          const fullPayload = { ...currentSettings, ...newSettings };
+
+          const response = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(fullPayload),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server Error (${response.status}): ${errorText}`);
+          }
+
+          // Server just returns {message}, so we update local state directly
+          set((state) => ({ 
+            settings: { ...state.settings, ...newSettings },
+            isOnline: true 
           }));
+          
+        } catch (error) {
+          console.error("Critical Sync Error:", error);
+          throw error;
         }
       },
 

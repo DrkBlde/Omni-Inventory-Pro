@@ -42,7 +42,6 @@
 
     --radius: 0.75rem;
 
-    /* Increased opacity for better readability and to prevent overlap */
     --glass-bg: 0 0% 6% / 0.85; 
     --glass-border: 0 0% 100% / 0.12;
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
@@ -66,11 +65,26 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+
+  input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    opacity: 0.6;
+    margin-right: 4px;
+    transition: opacity 0.2s;
+  }
+
+  input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  input[type="month"] {
+    position: relative;
+  }
 }
 
 @layer utilities {
   .glass {
-    /* Using hsla with higher opacity to ensure content behind is blocked */
     background: hsla(0, 0%, 6%, 0.85); 
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -85,9 +99,7 @@
     border: 1px solid hsla(0, 0%, 100%, 0.06);
   }
 
-  /* This is the class used in your Dialogs/Popups */
   .glass-strong {
-    /* Increased to 0.95 opacity so you cannot see text through it */
     background: hsla(0, 0%, 5%, 0.95); 
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
@@ -103,4 +115,79 @@
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, hsl(0, 0%, 100%), hsl(0, 0%, 60%));
   }
+}
+
+/* --- PRINT STYLES --- */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  /* Hide the entire app/dashboard */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the Bill/Receipt container */
+  /* Make sure your Bill component has id="printable-bill" */
+  #printable-bill, #printable-bill * {
+    visibility: visible;
+  }
+
+  #printable-bill {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+    color: black !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 14px;
+  }
+
+  /* Remove any dark glass effects or shadows for the print version */
+  #printable-bill {
+    box-shadow: none !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Force display of QR code and separators */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Adjust spacing to match your specific requirement */
+  .bill-divider {
+    border-top: 1px dashed #000 !important;
+    margin: 10px 0 !important;
+  }
+
+  .bill-item {
+    margin-bottom: 2px !important;
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+input[type="month"] {
+    position: relative;
+}
+
+input[type="month"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
 }

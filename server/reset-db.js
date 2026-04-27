@@ -8,31 +8,49 @@ async function resetDatabase() {
   try {
     console.log('Resetting database...');
 
-    // Delete all data in correct order (respecting foreign keys)
+    // 1. Clear Transaction Data
     await prisma.billItem.deleteMany();
     console.log('✓ Cleared bill items');
 
     await prisma.bill.deleteMany();
     console.log('✓ Cleared bills');
 
+    // 2. Clear Inventory
     await prisma.batch.deleteMany();
     console.log('✓ Cleared batches');
 
     await prisma.product.deleteMany();
     console.log('✓ Cleared products');
 
+    // 3. Clear Customer & Attendance Data
     await prisma.customer.deleteMany();
     console.log('✓ Cleared customers');
 
     await prisma.clockEntry.deleteMany();
     console.log('✓ Cleared clock entries');
 
+    await prisma.attendance.deleteMany(); 
+    console.log('✓ Cleared attendance records');
+
+    // 4. CLEAR USERS (Crucial: Must delete users before roles)
+    // We filter to keep the main 'admin' if you don't want to get locked out, 
+    // but if you want a TOTAL wipe, use await prisma.user.deleteMany();
+    await prisma.user.deleteMany({
+      where: {
+        username: { not: 'admin' } // Keeps the master admin account
+      }
+    });
+    console.log('✓ Cleared all users except master admin');
+
+    // 5. Clear Settings
     await prisma.settings.deleteMany();
     console.log('✓ Cleared settings');
 
-    // Keep roles but reset to defaults
+    // 6. Clear Roles (Must happen after users are cleared)
     await prisma.role.deleteMany();
     console.log('✓ Cleared roles');
+
+    // --- REINITIALIZATION ---
 
     // Recreate default roles
     const ALL_PERMISSIONS = [
@@ -77,7 +95,6 @@ async function resetDatabase() {
     console.log('✓ Default settings initialized');
 
     console.log('\n✓ Database reset complete!');
-    console.log('The admin user remains unchanged.');
 
   } catch (error) {
     console.error('Database reset failed:', error);

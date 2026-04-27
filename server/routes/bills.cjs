@@ -1,12 +1,18 @@
 const express = require('express');
-const { authenticate } = require('../middleware/auth.cjs');
+const { authenticate, authorize } = require('../middleware/auth.cjs');
 
 module.exports = function billRoutes(prisma) {
   const router = express.Router();
 
-  router.post('/', authenticate, async (req, res) => {
+  // POST: Create a bill
+  router.post('/', authenticate, authorize('pos.access'), async (req, res) => {
     try {
-      const { items, payments, customerId, gstPercentage, gstNumber, storeName, storeAddress, storePhone, billType } = req.body;
+      const { 
+        items, payments, customerId, customerName, 
+        gstPercentage, gstNumber, storeName, storeAddress, 
+        storePhone, billType 
+      } = req.body;
+      
       const user = req.user;
 
       const result = await prisma.$transaction(async (tx) => {
@@ -35,9 +41,7 @@ module.exports = function billRoutes(prisma) {
             remainingToDeduct -= deduct;
           }
 
-          if (remainingToDeduct > 0) {
-            throw new Error(`Insufficient stock for product ${product.name}`);
-          }
+          if (remainingToDeduct > 0) throw new Error(`Insufficient stock for ${product.name}`);
 
           billItemsData.push({
             productId: item.productId,
@@ -48,32 +52,46 @@ module.exports = function billRoutes(prisma) {
           });
         }
 
-        const taxableAmount = gstPercentage > 0 ? Number((subtotal / (1 + (gstPercentage / 100))).toFixed(2)) : subtotal;
-        const totalGst = subtotal - taxableAmount;
+        // --- UPDATED CALCULATION LOGIC START ---
+        const isNormal = billType === 'Normal';
+        
+        // Force GST rate to 0 if it's a Normal bill, otherwise use the provided percentage
+        const effectiveGstRate = isNormal ? 0 : (gstPercentage || 0);
+
+        // Calculate taxable amount (Subtotal / 1.GST)
+        const taxableAmount = effectiveGstRate > 0 
+          ? Number((subtotal / (1 + (effectiveGstRate / 100))).toFixed(2)) 
+          : subtotal;
+
+        // Calculate total GST amount (forced to 0 for Normal bills)
+        const totalGst = isNormal ? 0 : Number((subtotal - taxableAmount).toFixed(2));
+        // --- UPDATED CALCULATION LOGIC END ---
+
+        const lastBill = await tx.bill.findFirst({ orderBy: { billNumber: 'desc' } });
+        const nextBillNumber = lastBill ? lastBill.billNumber + 1 : 1001;
 
         const bill = await tx.bill.create({
           data: {
+            billNumber: nextBillNumber,
             total: subtotal,
             taxableAmount,
             totalGst,
-            gstPercentage,
-            gstNumber,
+            gstPercentage: effectiveGstRate,
+            gstNumber: isNormal ? "" : (gstNumber || ""),
             storeName,
             storeAddress,
             storePhone,
-            customerId,
-            createdBy: user.id,
+            customerName: customerName || "Walk-in",
+            creator: { connect: { id: user.id } },
             billType,
             payments: JSON.stringify(payments || []),
-            items: { create: billItemsData }
+            items: { create: billItemsData },
+            ...(customerId ? { customer: { connect: { id: customerId } } } : {})
           },
           include: { items: true, customer: true }
         });
 
-        return {
-          ...bill,
-          payments: JSON.parse(bill.payments)
-        };
+        return { ...bill, payments: JSON.parse(bill.payments) };
       });
 
       res.status(201).json(result);
@@ -82,25 +100,60 @@ module.exports = function billRoutes(prisma) {
     }
   });
 
-  router.post('/:id/cancel', authenticate, async (req, res) => {
+  // GET: Fetch all bills
+  router.get('/', authenticate, async (req, res) => {
+  try {
+    // DEBUG: See if ANY bills exist at all
+    const count = await prisma.bill.count();
+    console.log("Total bills in DB count:", count);
+
+    const bills = await prisma.bill.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        items: true,
+        customer: true,
+        creator: { select: { id: true, fullName: true, username: true } }
+      }
+    });
+
+    console.log("Bills found with relations:", bills.length);
+
+      const safeBills = bills.map(bill => {
+        let parsedPayments = [];
+        try {
+          parsedPayments = bill.payments ? JSON.parse(bill.payments) : [];
+        } catch (e) {
+          parsedPayments = [];
+        }
+
+        return {
+          ...bill,
+          payments: parsedPayments,
+          createdByName: bill.creator?.fullName || bill.creator?.username || 'Unknown'
+        };
+      });
+
+      res.json(safeBills || []);
+    } catch (err) {
+      console.error("Bills Route Error:", err);
+      res.json([]);
+    }
+  });
+
+  // POST: Cancel bill
+  router.post('/:id/cancel', authenticate, authorize('pos.cancel_bill'), async (req, res) => {
     try {
       const { id } = req.params;
       const user = req.user;
 
       await prisma.$transaction(async (tx) => {
-        const bill = await tx.bill.findUnique({
-          where: { id },
-          include: { items: true }
-        });
-
-        if (!bill) throw new Error('Bill not found');
-        if (bill.isCancelled) throw new Error('Bill already cancelled');
+        const bill = await tx.bill.findUnique({ where: { id }, include: { items: true } });
+        if (!bill || bill.isCancelled) throw new Error('Invalid bill state');
 
         for (const item of bill.items) {
           const batch = await tx.batch.findFirst({
             where: { productId: item.productId, batchNo: item.batchNo }
           });
-
           if (batch) {
             await tx.batch.update({
               where: { id: batch.id },
@@ -111,96 +164,7 @@ module.exports = function billRoutes(prisma) {
 
         await tx.bill.update({
           where: { id },
-          data: {
-            isCancelled: true,
-            cancelledBy: user.id,
-            cancelledAt: new Date()
-          }
-        });
-      });
-
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-  router.get('/', authenticate, async (req, res) => {
-    try {
-      const bills = await prisma.bill.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          items: true,
-          customer: true,
-          creator: { select: { id: true, fullName: true, username: true } }
-        }
-      });
-      // Parse payments JSON for each bill and add createdByName
-      const billsWithPayments = bills.map(bill => ({
-        ...bill,
-        payments: JSON.parse(bill.payments || '[]'),
-        createdByName: bill.creator?.fullName || bill.creator?.username || 'Unknown'
-      }));
-      res.json(billsWithPayments);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  router.get('/:id', authenticate, async (req, res) => {
-    try {
-      const bill = await prisma.bill.findUnique({
-        where: { id: req.params.id },
-        include: {
-          items: true,
-          customer: true,
-          creator: { select: { id: true, fullName: true, username: true } }
-        }
-      });
-      if (!bill) return res.status(404).json({ error: 'Bill not found' });
-      res.json({
-        ...bill,
-        payments: JSON.parse(bill.payments || '[]'),
-        createdByName: bill.creator?.fullName || bill.creator?.username || 'Unknown'
-      });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  router.post('/:id/reinstate', authenticate, async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      await prisma.$transaction(async (tx) => {
-        const bill = await tx.bill.findUnique({
-          where: { id },
-          include: { items: true }
-        });
-
-        if (!bill) throw new Error('Bill not found');
-        if (!bill.isCancelled) throw new Error('Bill is not cancelled');
-
-        for (const item of bill.items) {
-          const batch = await tx.batch.findFirst({
-            where: { productId: item.productId, batchNo: item.batchNo }
-          });
-
-          if (batch) {
-            await tx.batch.update({
-              where: { id: batch.id },
-              data: { quantity: Math.max(0, batch.quantity - item.quantity) }
-            });
-          }
-        }
-
-        await tx.bill.update({
-          where: { id },
-          data: {
-            isCancelled: false,
-            cancelledBy: null,
-            cancelledAt: null
-          }
+          data: { isCancelled: true, cancelledBy: user.id, cancelledAt: new Date() }
         });
       });
 
