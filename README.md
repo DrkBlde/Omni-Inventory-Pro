@@ -109,7 +109,7 @@ If you downloaded the `.msi` installer, run it and follow the on-screen steps. A
 | Username | `admin` |
 | Password | `admin123` |
 
-> **Important:** Change the admin password immediately after your first login via the Users & Roles page.
+> **Important:** You cannot change the admin password after your first login via the Users & Roles page. I have removed the admin user from the users page. please create a new account with admin permissions.
 
 ### Web Access (Other Devices)
 
